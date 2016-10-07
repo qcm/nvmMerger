@@ -9,7 +9,13 @@ def optParser():
 	#parser.print_help()
 	
 	args = parser.parse_args()
-	print args
+	#print args
+	#print args.m
+	
+	f = open(args.m, 'rb+')
+	f1 = open('memtest86+.bin', 'rb+')
+	f1.readline()
+	f.write(f1.readline())
 	
 def nvmMerger():
 	optParser()
