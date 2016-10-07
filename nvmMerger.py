@@ -12,12 +12,13 @@ def optParser():
 	#print args
 	#print args.m
 	
-	f = open(args.m, 'rb+')
-	f1 = open('memtest86+.bin', 'rb+')
-	f1.readline()
-	f.write(f1.readline())
+	return args
 	
 def nvmMerger():
-	optParser()
+	args = optParser()
+	m = open(args.m, 'w+b')
+	f = open('memtest86+.bin', 'rb+')
+	f.readline()
+	m.write(f.readline())
 
 nvmMerger()
