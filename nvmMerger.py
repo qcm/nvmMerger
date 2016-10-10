@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import argparse
 import binascii
+import os
 
 NVM_TLV_DATA_START = 4
 NVM_TLV_ZERO_PADDING = 8
@@ -52,22 +53,29 @@ class NVMTag:
 			i += 1
 
 # populate all nvms into the list
-def bin2list(fobj, nvm_list):
-	# Move cursor to where data starts
-	fobj.seek(NVM_TLV_DATA_START)
-	for i in range(3):
-		nvm_list.append(
-			NVMTag(i, fobj.read(1), fobj.read(1), fobj.read(1), fobj.read(1))
-		)
-		fobj.seek(NVM_TLV_ZERO_PADDING, 1)
-		nvm_list[i].inputval(fobj)
-		print i
-		i += 1
-		#t1.printall()
-	
+def bin2list(fname, nvm_list):
+	# open the file
+	finfo = os.stat(fname)
+	fsize = finfo.st_size
+	#print fsize
+	with open(fname, 'rb+') as fobj:
+		i = 0
+		# Move cursor to where data starts
+		fobj.seek(NVM_TLV_DATA_START)
+		#for i in range(3):
+		while (fobj.tell() < fsize) : 
+			nvm_list.append(
+				NVMTag(i, fobj.read(1), fobj.read(1), fobj.read(1), fobj.read(1))
+			)	
+			fobj.seek(NVM_TLV_ZERO_PADDING, 1)
+			nvm_list[i].inputval(fobj)
+			i += 1
+		#print fobj.tell()
+		fobj.close()
+	#print len(nvm_list)
 
 def list2bin(nvm_list, fobj):
-	for i in range(3):
+	for i in range(len(nvm_list)):
 		nvm = nvm_list[i]
 		fobj.write(nvm.TagNumLSB)
 		fobj.write(nvm.TagNumMSB)
@@ -82,18 +90,15 @@ def list2bin(nvm_list, fobj):
 def nvmMerger():
 	args = optParser()
 	m = open(args.m, 'w+b')
-	f = open(args.f, 'rb+')
-	s = open(args.s, 'rb+')
+	bin2list(args.f, list_f)
+	bin2list(args.s, list_f)
 	#f.readline()
 	#m.write(f.readline())
 	#for line in f:
 	#	print line
 	#
 	#i = int.from_bytes(f.read(1), byteorder='big') # only valid in Python3
-	bin2list(f, list_f)
 	list2bin(list_f, m)
-
 	m.close()
-	f.close()
 
 nvmMerger()
