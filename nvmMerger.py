@@ -9,6 +9,7 @@ NVM_TLV_ZERO_PADDING = 8
 # create lists stores whole bin file
 list_f = []
 list_s = []
+list_m = []
 
 def optParser():
 	parser = argparse.ArgumentParser(description='nvmMerger merges two NVM bin files into one')
@@ -32,12 +33,16 @@ class NVMTag:
 		self.TagLengthMSB = TLM
 		self.length = 0
 		self.TagValue = []
+		self.num = 0
 	
 	def inputval(self, fobj):
 		iLSB = int(binascii.b2a_hex(self.TagLengthLSB), 16)
 		iMSB = int(binascii.b2a_hex(self.TagLengthMSB), 16)
 		self.length = iLSB + iMSB*16
-		#print num
+		nLSB = int(binascii.b2a_hex(self.TagNumLSB), 16)
+		nMSB = int(binascii.b2a_hex(self.TagNumMSB), 16)
+		self.num = nLSB + nMSB*16
+		#print self.num
 		for i in range(self.length):
 			x = fobj.read(1)
 			self.TagValue.append(x)
@@ -74,6 +79,7 @@ def bin2list(fname, nvm_list):
 		fobj.close()
 	#print len(nvm_list)
 
+# write the list to file
 def list2bin(nvm_list, fobj):
 	for i in range(len(nvm_list)):
 		nvm = nvm_list[i]
@@ -87,18 +93,25 @@ def list2bin(nvm_list, fobj):
 		for j in range(nvm.length):
 			fobj.write(nvm.TagValue[j])
 
+# merge two input lists and sort them based on Tag num
+def mergelists(listf, lists):
+	listm = listf + lists
+	return sorted(listm, key=lambda nvm: nvm.num)
+	
+# main function
 def nvmMerger():
 	args = optParser()
 	m = open(args.m, 'w+b')
 	bin2list(args.f, list_f)
-	bin2list(args.s, list_f)
+	bin2list(args.s, list_s)
+	list_m = mergelists(list_f, list_s)	
 	#f.readline()
 	#m.write(f.readline())
 	#for line in f:
 	#	print line
 	#
 	#i = int.from_bytes(f.read(1), byteorder='big') # only valid in Python3
-	list2bin(list_f, m)
+	list2bin(list_m, m)
 	m.close()
 
 nvmMerger()
