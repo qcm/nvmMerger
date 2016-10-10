@@ -23,7 +23,8 @@ def nvmMerger():
 	for line in f:
 		print line
 	
-
+	m.close()
+	f.close()
 
 #class NVMTag:
 	
