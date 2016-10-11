@@ -61,16 +61,18 @@ class NVMTag:
 def nvmChecker(fname, sname):
 	# extract the NVM header
 	with open(fname, 'rb+') as f:
-		fheader = f.read(1)
+		fheader = f.read(NVM_TLV_DATA_START)
 		f.close()
 	with open(sname, 'rb+') as s:
-		sheader = s.read(1)
+		sheader = s.read(NVM_TLV_DATA_START)
 		s.close()
-	#print binascii.b2a_hex(fheader)
-	#print binascii.b2a_hex(sheader)
-	if fheader==sheader:
+	#print binascii.b2a_hex(fheader[0])
+	#print binascii.b2a_hex(sheader[0])
+	# first type is the TLV type
+	if fheader[0]==sheader[0]:
 		print ' Pass file checks, starting to merge...'
 		print ' Note: if tags are duplicated, the second file will overwrite first one'
+		print binascii.b2a_hex(fheader)
 		return fheader
 	else:
 		print 'Two NVM have different headers, exit...'
