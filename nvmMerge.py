@@ -5,7 +5,7 @@ import os
 
 NVM_TLV_DATA_START = 4
 NVM_TLV_ZERO_PADDING = 8
-
+NVM_HEADER = 0
 # create lists stores whole bin file
 list_f = []
 list_s = []
@@ -57,12 +57,31 @@ class NVMTag:
 			print binascii.b2a_hex(self.TagValue[i])
 			i += 1
 
+# check if the NVM file is valid
+def nvmChecker(fname, sname):
+	# extract the NVM header
+	with open(fname, 'rb+') as f:
+		fheader = f.read(1)
+		f.close()
+	with open(sname, 'rb+') as s:
+		sheader = s.read(1)
+		s.close()
+	#print binascii.b2a_hex(fheader)
+	#print binascii.b2a_hex(sheader)
+	if fheader==sheader:
+		print ' Pass file checks, starting to merge...'
+		print ' Note: if tags are duplicated, the second file will overwrite first one'
+		return fheader
+	else:
+		print 'Two NVM have different headers, exit...'
+		exit()
+
 # populate all nvms into the list
 def bin2list(fname, nvm_list):
-	# open the file
 	finfo = os.stat(fname)
 	fsize = finfo.st_size
 	#print fsize
+	# open the file
 	with open(fname, 'rb+') as fobj:
 		i = 0
 		# Move cursor to where data starts
@@ -102,16 +121,18 @@ def mergelists(listf, lists):
 def nvmMerger():
 	args = optParser()
 	m = open(args.m, 'w+b')
+	NVM_HEADER = nvmChecker(args.f, args.s)
+	m.write(NVM_HEADER)
+
 	bin2list(args.f, list_f)
 	bin2list(args.s, list_s)
 	list_m = mergelists(list_f, list_s)	
-	#f.readline()
-	#m.write(f.readline())
-	#for line in f:
-	#	print line
+
 	#
-	#i = int.from_bytes(f.read(1), byteorder='big') # only valid in Python3
 	list2bin(list_m, m)
 	m.close()
+	print ' '
+	print '\tMerge completes'
+	print ' '
 
 nvmMerger()
