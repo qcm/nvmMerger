@@ -4,8 +4,11 @@ import binascii
 import os
 
 NVM_TLV_DATA_START = 4
+NVM_TLV_TAG = 2
+NVM_TLV_LEN = 2
 NVM_TLV_ZERO_PADDING = 8
 NVM_HEADER = 0
+NVM_BODY_LEN = 0
 # create lists stores whole bin file
 list_f = []
 list_s = []
@@ -70,10 +73,9 @@ def nvmChecker(fname, sname):
 	#print binascii.b2a_hex(sheader[0])
 	# first type is the TLV type
 	if fheader[0]==sheader[0]:
-		print ' Pass file checks, starting to merge...'
 		print ' Note: if tags are duplicated, the second file will overwrite first one'
-		print binascii.b2a_hex(fheader)
-		return fheader
+		print ' Pass file checks, starting to merge...'
+		#print binascii.b2a_hex(fheader)
 	else:
 		print 'Two NVM have different headers, exit...'
 		exit()
@@ -98,12 +100,14 @@ def bin2list(fname, nvm_list):
 			i += 1
 		#print fobj.tell()
 		fobj.close()
-	#print len(nvm_list)
 
 # write the list to file
 def list2bin(nvm_list, fobj):
-	for i in range(len(nvm_list)):
-		nvm = nvm_list[i]
+	# fill up the NVM_HEADER
+	taglen_sum = 0
+	fobj.seek(NVM_TLV_DATA_START)
+	for nvm in nvm_list:
+		taglen_sum += (NVM_TLV_TAG + NVM_TLV_LEN + NVM_TLV_ZERO_PADDING + nvm.length)
 		fobj.write(nvm.TagNumLSB)
 		fobj.write(nvm.TagNumMSB)
 		fobj.write(nvm.TagLengthLSB)
@@ -113,9 +117,21 @@ def list2bin(nvm_list, fobj):
 			j += 1
 		for j in range(nvm.length):
 			fobj.write(nvm.TagValue[j])
+	#print taglen_sum
+	tmp = hex(taglen_sum).lstrip('0x')
+	ttmp = tmp.zfill(6)
+	NVM_BODY_LEN = binascii.a2b_hex(ttmp[4:]) + binascii.a2b_hex(ttmp[2:4]) + binascii.a2b_hex(ttmp[:2])
+	NVM_HEADER = b'\x02' + NVM_BODY_LEN
+	#print binascii.b2a_hex(NVM_HEADER)
+	fobj.seek(0)
+	fobj.write(NVM_HEADER)
 
 # merge two input lists and sort them based on Tag num
 def mergelists(listf, lists):
+	for nvms in reversed(lists):
+		for nvmf in listf:
+			if nvms.num == nvmf.num:
+				listf.pop(nvmf.TagIndex)	
 	listm = listf + lists
 	return sorted(listm, key=lambda nvm: nvm.num)
 	
@@ -123,8 +139,7 @@ def mergelists(listf, lists):
 def nvmMerger():
 	args = optParser()
 	m = open(args.m, 'w+b')
-	NVM_HEADER = nvmChecker(args.f, args.s)
-	m.write(NVM_HEADER)
+	nvmChecker(args.f, args.s)
 
 	bin2list(args.f, list_f)
 	bin2list(args.s, list_s)
