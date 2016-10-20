@@ -118,9 +118,8 @@ def list2bin(nvm_list, fobj):
 		for j in range(nvm.length):
 			fobj.write(nvm.TagValue[j])
 	#print taglen_sum
-	tmp = hex(taglen_sum).lstrip('0x')
-	ttmp = tmp.zfill(6)
-	NVM_BODY_LEN = binascii.a2b_hex(ttmp[4:]) + binascii.a2b_hex(ttmp[2:4]) + binascii.a2b_hex(ttmp[:2])
+	tmp = hex(taglen_sum).lstrip('0x').zfill(6)
+	NVM_BODY_LEN = binascii.a2b_hex(tmp[4:]) + binascii.a2b_hex(tmp[2:4]) + binascii.a2b_hex(tmp[:2])
 	NVM_HEADER = b'\x02' + NVM_BODY_LEN
 	#print binascii.b2a_hex(NVM_HEADER)
 	fobj.seek(0)
