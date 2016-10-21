@@ -34,26 +34,34 @@ def optParser():
 class NVMTag:
 	def __init__(self, TIDX, TNL=None, TNB=None, TLL=None, TLM=None, TagNum=0, TagLength=0):
 		self.TagIndex = TIDX
+		self.TagValue = []
+		self.TagNum = TagNum
+		self.TagLength = TagLength 
 		if TNL is not None and TNB is not None and TLL is not None and TLM is not None:
 			# BIN_MODE only attributes
 			self.TagNumLSB = TNL  
 			self.TagNumMSB = TNB
 			self.TagLengthLSB = TLL
 			self.TagLengthMSB = TLM
-			self.TagValue = []
-		self.TagNum = TagNum
-		self.TagLength = TagLength 
+
 	
-	def inputval(self, fobj):
-		iLSB = int(binascii.b2a_hex(self.TagLengthLSB), 16)
-		iMSB = int(binascii.b2a_hex(self.TagLengthMSB), 16)
-		self.TagLength = iLSB + iMSB*16
-		nLSB = int(binascii.b2a_hex(self.TagNumLSB), 16)
-		nMSB = int(binascii.b2a_hex(self.TagNumMSB), 16)
-		self.TagNum = nLSB + nMSB*16
-		for i in range(self.TagLength):
-			x = fobj.read(1)
-			self.TagValue.append(x)
+	def inputval(self, finput=None, valstr=None):
+		if MERGER_MODE == BIN_MODE and finput is not None:
+			iLSB = int(binascii.b2a_hex(self.TagLengthLSB), 16)
+			iMSB = int(binascii.b2a_hex(self.TagLengthMSB), 16)
+			self.TagLength = iLSB + iMSB*16
+			nLSB = int(binascii.b2a_hex(self.TagNumLSB), 16)
+			nMSB = int(binascii.b2a_hex(self.TagNumMSB), 16)
+			self.TagNum = nLSB + nMSB*16
+			for i in range(self.TagLength):
+				x = finput.read(1)
+				self.TagValue.append(x)
+
+		elif MERGER_MODE == NVM_MODE and valstr is not None:
+			val = valstr.split('=')
+			self.TagValue.append(val[1])
+		else:
+			print '\n\tNo TagValue inserted\n'
 	
 	def printall(self):
 		if MERGER_MODE == BIN_MODE:
@@ -66,6 +74,7 @@ class NVMTag:
 		if MERGER_MODE == NVM_MODE:
 			print self.TagNum
 			print self.TagLength
+			print self.TagValue[0]
 
 # check if: 
 #	1) files' extension are bin or nvm
@@ -189,6 +198,7 @@ def nvm2list(fname, nvm_list):
 				tagLen = int(line.strip('TagLength ='), 10)
 			elif 'TagValue' in line:
 				nvm_list.append(NVMTag(tagIndex,TagNum=tagNum,TagLength=tagLen))
+				nvm_list[tagIndex].inputval(valstr=line)
 				nvm_list[tagIndex].printall()
 				tagIndex += 1
 			else:
