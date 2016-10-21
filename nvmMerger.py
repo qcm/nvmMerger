@@ -198,15 +198,13 @@ def nvmMerger():
 		list2bin(list_m, m)
 		m.close()
 	elif MERGER_MODE == NVM_MODE and ml[-1] == 'nvm':
-		m = open(args.m, 'w+b')
+		m = open(args.m, 'w+')
 		print 'NVM MODE'
 	else:
 		print '\n\tOutput file extension is not matched with input files'	
 		print '\tMerge failed\n'
 		exit()
 
-	print ' '
-	print '\tMerge completes'
-	print ' '
+	print '\n\tMerge completes\n'
 
 nvmMerger()
