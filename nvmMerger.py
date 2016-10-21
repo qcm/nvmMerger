@@ -171,6 +171,21 @@ def list2bin(nvm_list, fobj):
 	fobj.seek(0)
 	fobj.write(NVM_HEADER)
 
+# populate all nvms into the list
+def nvm2list(fname, nvm_list):
+	tagIndex = 0
+	with open(fname, 'r+') as fobj:
+		for line in fobj:
+			if 'TagNum' in line:
+				tagNum = int(line.strip('TagNum ='), 10)
+				nvm_list.append(
+					NVMTag(tagIndex)
+				)
+				tagIndex += 1
+				print tagNum
+		fobj.close()
+
+
 # merge two input lists and sort them based on Tag num
 def mergelists(listf, lists):
 	for nvms in reversed(lists):
@@ -199,7 +214,8 @@ def nvmMerger():
 		m.close()
 	elif MERGER_MODE == NVM_MODE and ml[-1] == 'nvm':
 		m = open(args.m, 'w+')
-		print 'NVM MODE'
+		nvm2list(args.f, list_f)
+		nvm2list(args.s, list_s)
 	else:
 		print '\n\tOutput file extension is not matched with input files'	
 		print '\tMerge failed\n'
