@@ -2,6 +2,7 @@
 import argparse
 import binascii
 import os
+from datetime import datetime
 
 NVM_TLV_DATA_START = 4
 NVM_TLV_TAG = 2
@@ -9,6 +10,7 @@ NVM_TLV_LEN = 2
 NVM_TLV_ZERO_PADDING = 8
 NVM_HEADER = 0
 NVM_BODY_LEN = 0
+TAG_NUM = 0 
 # create lists stores whole bin file
 list_f = []
 list_s = []
@@ -161,7 +163,7 @@ def bin2list(fname, nvm_list):
 		#print fobj.tell()
 		fobj.close()
 
-# write the list to file
+# write the list to BIN file
 def list2bin(nvm_list, fobj):
 	# fill up the NVM_HEADER
 	taglen_sum = 0
@@ -185,6 +187,40 @@ def list2bin(nvm_list, fobj):
 	fobj.seek(0)
 	fobj.write(NVM_HEADER)
 
+
+# write the header of NVM-text file
+def writeHeaderToFile(fobj):
+        fobj.write('#\n#\n')
+        fobj.write('#   Tag Listfile\n')
+        fobj.write('#\n#\n')
+        fobj.write('\n')
+        fobj.write('[General]\n')
+        fobj.write('Signature = windows\n')
+        fobj.write('FormatVersion = 1.0\n')
+
+        s = ' ' 
+        dt = datetime.now()
+        s += dt.strftime('%A %B %d, %Y   %I:%M:%S %p')  
+    
+        fobj.write('TimeStamp =' + s)
+        fobj.write('\n\n')
+        fobj.write('[Tag]\n')
+        s = 'Num = ' + str(TAG_NUM) + '\n\n'
+        fobj.write(s)
+
+# write the list to NVM-text file
+def list2NVMfile(nvm_list, fobj):
+	for nvm in nvm_list:
+		sHeader = '[Tag' + str(nvm.TagIndex) + ']\n'
+		sTagNum = 'TagNum = ' + str(nvm.TagNum) + '\n'
+		sTagLength = 'TagLength = ' + str(nvm.TagLength) + '\n'
+		sTagValue = 'TagValue =' + nvm.TagValue[0] + '\n'
+		fobj.write(sHeader)
+		fobj.write(sTagNum)
+		fobj.write(sTagLength)
+		fobj.write(sTagValue)
+
+
 # populate all nvms into the list
 def nvm2list(fname, nvm_list):
 	tagIndex = 0
@@ -199,7 +235,7 @@ def nvm2list(fname, nvm_list):
 			elif 'TagValue' in line:
 				nvm_list.append(NVMTag(tagIndex,TagNum=tagNum,TagLength=tagLen))
 				nvm_list[tagIndex].inputval(valstr=line)
-				nvm_list[tagIndex].printall()
+				#nvm_list[tagIndex].printall()
 				tagIndex += 1
 			else:
 				continue
@@ -208,12 +244,14 @@ def nvm2list(fname, nvm_list):
 
 # merge two input lists and sort them based on Tag num
 def mergelists(listf, lists):
+	global TAG_NUM
 	for nvms in reversed(lists):
 		for nvmf in listf:
 			if nvms.TagNum == nvmf.TagNum:
-				listf[nvmf.TagIndex].printall()
+				#listf[nvmf.TagIndex].printall()
 				listf.pop(nvmf.TagIndex)	
 	listm = listf + lists
+	TAG_NUM = len(listm) 
 	return sorted(listm, key=lambda nvm: nvm.TagNum)
 	
 # main function
@@ -238,6 +276,10 @@ def nvmMerger():
 		m = open(args.m, 'w+')
 		nvm2list(args.f, list_f)
 		nvm2list(args.s, list_s)
+		list_m = mergelists(list_f, list_s)	
+		writeHeaderToFile(m)
+		list2NVMfile(list_m, m)
+		m.close()
 	else:
 		print '\n\tOutput file extension is not matched with input files'	
 		print '\tMerge failed\n'
