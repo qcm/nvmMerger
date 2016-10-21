@@ -252,7 +252,13 @@ def mergelists(listf, lists):
 				listf.pop(nvmf.TagIndex)	
 	listm = listf + lists
 	TAG_NUM = len(listm) 
-	return sorted(listm, key=lambda nvm: nvm.TagNum)
+	# sort the merged list	
+	nvm_list = sorted(listm, key=lambda nvm: nvm.TagNum)
+	# redefine TagIndex after merging
+	for i in range(TAG_NUM):
+		nvm_list[i].TagIndex = i
+
+	return nvm_list
 	
 # main function
 def nvmMerger():
