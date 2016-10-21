@@ -32,35 +32,40 @@ def optParser():
 	return args
 	
 class NVMTag:
-	def __init__(self, TIDX, TNL, TNB, TLL, TLM):
+	def __init__(self, TIDX, TNL=None, TNB=None, TLL=None, TLM=None, TagNum=0, TagLength=0):
 		self.TagIndex = TIDX
-		self.TagNumLSB = TNL  
-		self.TagNumMSB = TNB
-		self.TagLengthLSB = TLL
-		self.TagLengthMSB = TLM
-		self.length = 0
-		self.TagValue = []
-		self.num = 0
+		if TNL is not None and TNB is not None and TLL is not None and TLM is not None:
+			# BIN_MODE only attributes
+			self.TagNumLSB = TNL  
+			self.TagNumMSB = TNB
+			self.TagLengthLSB = TLL
+			self.TagLengthMSB = TLM
+			self.TagValue = []
+		self.TagNum = TagNum
+		self.TagLength = TagLength 
 	
 	def inputval(self, fobj):
 		iLSB = int(binascii.b2a_hex(self.TagLengthLSB), 16)
 		iMSB = int(binascii.b2a_hex(self.TagLengthMSB), 16)
-		self.length = iLSB + iMSB*16
+		self.TagLength = iLSB + iMSB*16
 		nLSB = int(binascii.b2a_hex(self.TagNumLSB), 16)
 		nMSB = int(binascii.b2a_hex(self.TagNumMSB), 16)
-		self.num = nLSB + nMSB*16
-		#print self.num
-		for i in range(self.length):
+		self.TagNum = nLSB + nMSB*16
+		for i in range(self.TagLength):
 			x = fobj.read(1)
 			self.TagValue.append(x)
 	
 	def printall(self):
-		print binascii.b2a_hex(self.TagNumLSB)
-		print binascii.b2a_hex(self.TagNumMSB)
-		print binascii.b2a_hex(self.TagLengthLSB)
-		print binascii.b2a_hex(self.TagLengthMSB)
-		for i in range(self.length):
-			print binascii.b2a_hex(self.TagValue[i])
+		if MERGER_MODE == BIN_MODE:
+			print binascii.b2a_hex(self.TagNumLSB)
+			print binascii.b2a_hex(self.TagNumMSB)
+			print binascii.b2a_hex(self.TagLengthLSB)
+			print binascii.b2a_hex(self.TagLengthMSB)
+			for i in range(self.TagLength):
+				print binascii.b2a_hex(self.TagValue[i])
+		if MERGER_MODE == NVM_MODE:
+			print self.TagNum
+			print self.TagLength
 
 # check if: 
 #	1) files' extension are bin or nvm
@@ -153,16 +158,16 @@ def list2bin(nvm_list, fobj):
 	taglen_sum = 0
 	fobj.seek(NVM_TLV_DATA_START)
 	for nvm in nvm_list:
-		taglen_sum += (NVM_TLV_TAG + NVM_TLV_LEN + NVM_TLV_ZERO_PADDING + nvm.length)
+		taglen_sum += (NVM_TLV_TAG + NVM_TLV_LEN + NVM_TLV_ZERO_PADDING + nvm.TagLength)
 		fobj.write(nvm.TagNumLSB)
 		fobj.write(nvm.TagNumMSB)
 		fobj.write(nvm.TagLengthLSB)
 		fobj.write(nvm.TagLengthMSB)
 		for j in range(NVM_TLV_ZERO_PADDING):
 			fobj.write(b'\x00')
-
-		for j in range(nvm.length):
+		for j in range(nvm.TagLength):
 			fobj.write(nvm.TagValue[j])
+
 	#print taglen_sum
 	tmp = hex(taglen_sum).lstrip('0x').zfill(6)
 	NVM_BODY_LEN = binascii.a2b_hex(tmp[4:]) + binascii.a2b_hex(tmp[2:4]) + binascii.a2b_hex(tmp[:2])
@@ -174,15 +179,20 @@ def list2bin(nvm_list, fobj):
 # populate all nvms into the list
 def nvm2list(fname, nvm_list):
 	tagIndex = 0
+	tagNum = 0
+	tagLen = 0
 	with open(fname, 'r+') as fobj:
 		for line in fobj:
 			if 'TagNum' in line:
 				tagNum = int(line.strip('TagNum ='), 10)
-				nvm_list.append(
-					NVMTag(tagIndex)
-				)
+			elif 'TagLength' in line:
+				tagLen = int(line.strip('TagLength ='), 10)
+			elif 'TagValue' in line:
+				nvm_list.append(NVMTag(tagIndex,TagNum=tagNum,TagLength=tagLen))
+				nvm_list[tagIndex].printall()
 				tagIndex += 1
-				print tagNum
+			else:
+				continue
 		fobj.close()
 
 
@@ -190,14 +200,16 @@ def nvm2list(fname, nvm_list):
 def mergelists(listf, lists):
 	for nvms in reversed(lists):
 		for nvmf in listf:
-			if nvms.num == nvmf.num:
+			if nvms.TagNum == nvmf.TagNum:
+				listf[nvmf.TagIndex].printall()
 				listf.pop(nvmf.TagIndex)	
 	listm = listf + lists
-	return sorted(listm, key=lambda nvm: nvm.num)
+	return sorted(listm, key=lambda nvm: nvm.TagNum)
 	
 # main function
 def nvmMerger():
 	args = optParser()
+	# Check file format and decides MODE
 	if not nvmChecker(args.f, args.s):
 		exit()
 
