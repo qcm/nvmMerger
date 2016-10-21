@@ -53,7 +53,6 @@ class NVMTag:
 		for i in range(self.length):
 			x = fobj.read(1)
 			self.TagValue.append(x)
-			i += 1
 	
 	def printall(self):
 		print binascii.b2a_hex(self.TagNumLSB)
@@ -62,7 +61,6 @@ class NVMTag:
 		print binascii.b2a_hex(self.TagLengthMSB)
 		for i in range(self.length):
 			print binascii.b2a_hex(self.TagValue[i])
-			i += 1
 
 # check if: 
 #	1) files' extension are bin or nvm
@@ -99,7 +97,32 @@ def nvmChecker(fname, sname):
 			return False
 
 	if MERGER_MODE == NVM_MODE:
-		print 'NVM MODE'
+		#print 'NVM MODE
+		f_tag_num = -1
+		s_tag_num = -1
+		try:
+			with open(fname, 'r+') as f:
+				for line in f:
+					if '[Tag]' in line:
+						f_tag_num = int(f.next().strip('Num ='),10)
+						break
+				f.close()
+			with open(sname, 'r+') as s:
+				for line in s:
+					if '[Tag]' in line:
+						s_tag_num = int(s.next().strip('Num ='),10)
+						break
+				s.close()
+				
+			if f_tag_num <= 0:
+				print '\n\t' + fname + ' has improper NVM text format, exit...\n'
+				return False
+			elif s_tag_num <= 0:
+				print '\n\t' + sname + ' has improper NVM text format, exit...\n'
+				return False
+		except ValueError:
+			print '\n\tFiles have improper NVM text format, exit...\n'
+			return False
 
 	return True
 
@@ -137,7 +160,7 @@ def list2bin(nvm_list, fobj):
 		fobj.write(nvm.TagLengthMSB)
 		for j in range(NVM_TLV_ZERO_PADDING):
 			fobj.write(b'\x00')
-			j += 1
+
 		for j in range(nvm.length):
 			fobj.write(nvm.TagValue[j])
 	#print taglen_sum
@@ -175,6 +198,7 @@ def nvmMerger():
 		list2bin(list_m, m)
 		m.close()
 	elif MERGER_MODE == NVM_MODE and ml[-1] == 'nvm':
+		m = open(args.m, 'w+b')
 		print 'NVM MODE'
 	else:
 		print '\n\tOutput file extension is not matched with input files'	
