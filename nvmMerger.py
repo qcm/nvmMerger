@@ -96,10 +96,10 @@ def nvmChecker(fname, sname):
 
 	if MERGER_MODE == BIN_MODE:
 		# extract the NVM header
-		with open(fname, 'rb+') as f:
+		with open(fname, 'rb') as f:
 			fheader = f.read(NVM_TLV_DATA_START)
 			f.close()
-		with open(sname, 'rb+') as s:
+		with open(sname, 'rb') as s:
 			sheader = s.read(NVM_TLV_DATA_START)
 			s.close()
 		#print binascii.b2a_hex(fheader[0])
@@ -117,13 +117,13 @@ def nvmChecker(fname, sname):
 		f_tag_num = -1
 		s_tag_num = -1
 		try:
-			with open(fname, 'r+') as f:
+			with open(fname, 'r') as f:
 				for line in f:
 					if '[Tag]' in line:
 						f_tag_num = int(f.next().strip('Num ='),10)
 						break
 				f.close()
-			with open(sname, 'r+') as s:
+			with open(sname, 'r') as s:
 				for line in s:
 					if '[Tag]' in line:
 						s_tag_num = int(s.next().strip('Num ='),10)
@@ -191,7 +191,7 @@ def list2bin(nvm_list, fobj):
 # write the header of NVM-text file
 def writeHeaderToFile(fobj):
         fobj.write('#\n#\n')
-        fobj.write('#   Tag Listfile\n')
+        fobj.write('#    Tag Listfile     \n')
         fobj.write('#\n#\n')
         fobj.write('\n')
         fobj.write('[General]\n')
@@ -214,7 +214,9 @@ def list2NVMfile(nvm_list, fobj):
 		sHeader = '[Tag' + str(nvm.TagIndex) + ']\n'
 		sTagNum = 'TagNum = ' + str(nvm.TagNum) + '\n'
 		sTagLength = 'TagLength = ' + str(nvm.TagLength) + '\n'
-		sTagValue = 'TagValue =' + nvm.TagValue[0] + '\n'
+		sTagValue = 'TagValue =' + nvm.TagValue[0] 
+		if nvm.TagIndex != TAG_NUM - 1:
+			sTagValue += '\n'
 		fobj.write(sHeader)
 		fobj.write(sTagNum)
 		fobj.write(sTagLength)
@@ -226,7 +228,7 @@ def nvm2list(fname, nvm_list):
 	tagIndex = 0
 	tagNum = 0
 	tagLen = 0
-	with open(fname, 'r+') as fobj:
+	with open(fname, 'r') as fobj:
 		for line in fobj:
 			if 'TagNum' in line:
 				tagNum = int(line.strip('TagNum ='), 10)
