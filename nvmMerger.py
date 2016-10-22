@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import argparse
 import binascii
 import os
 import sys
@@ -29,17 +28,21 @@ def optParser():
 	args = ''
 	py_ver = sys.hexversion
 	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
-	print '\n Your python version is ' + py_ver_str
+	print '\n*Your python version is ' + py_ver_str
+	#if py_ver <= PYTHON_VERSION:
 	if py_ver >= PYTHON_VERSION:
-		print ' Use argparse module'
-		parser = argparse.ArgumentParser(description='nvmMerger merges two NVM bin files into one')
+		import argparse
+		print '*Use argparse module\n'
+		parser = argparse.ArgumentParser(description='*** nvmMerger merges two NVM text/bin files into one ***')
 		parser.add_argument('-f', metavar='first_file', type=str, required=True, help='First nvm/bin file, the base NVM')
 		parser.add_argument('-s', metavar='second_file', type=str, required=True, help='Second nvm/bin file to add on top of firs file')
 		parser.add_argument('-m', metavar='merged_file', type=str, required=True, help='Merged nvm/bin file')
 		#parser.print_help()
 		args = parser.parse_args()
 	else:
-		print ' Use optparse module'
+		from optparse import OptionParser
+		parser = OptionParser()
+		print '*Use optparse module'
 
 	return args
 	
