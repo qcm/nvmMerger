@@ -2,8 +2,13 @@
 import argparse
 import binascii
 import os
+import sys
 from datetime import datetime
 
+# use argparse for python version higher than 2.7
+# use optparse for python version lower than 2.7
+# argparse was added since 2.7
+PYTHON_VERSION = 0x02070000
 NVM_TLV_DATA_START = 4
 NVM_TLV_TAG = 2
 NVM_TLV_LEN = 2
@@ -21,17 +26,23 @@ BIN_MODE = 'bin'
 NVM_MODE = 'nvm'
 
 def optParser():
-	parser = argparse.ArgumentParser(description='nvmMerger merges two NVM bin files into one')
-	parser.add_argument('-f', metavar='bin1', type=str, required=True, help='First bin file, the base NVM')
-	parser.add_argument('-s', metavar='bin2', type=str, required=True, help='Second bin file to add')
-	parser.add_argument('-m', metavar='bin3', type=str, required=True, help='Merged bin file')
-	#parser.print_help()
-	
-	args = parser.parse_args()
-	#print args
-	#print args.m
-	
+	args = ''
+	py_ver = sys.hexversion
+	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
+	print '\n Your python version is ' + py_ver_str
+	if py_ver >= PYTHON_VERSION:
+		print ' Use argparse module'
+		parser = argparse.ArgumentParser(description='nvmMerger merges two NVM bin files into one')
+		parser.add_argument('-f', metavar='first_file', type=str, required=True, help='First nvm/bin file, the base NVM')
+		parser.add_argument('-s', metavar='second_file', type=str, required=True, help='Second nvm/bin file to add on top of firs file')
+		parser.add_argument('-m', metavar='merged_file', type=str, required=True, help='Merged nvm/bin file')
+		#parser.print_help()
+		args = parser.parse_args()
+	else:
+		print ' Use optparse module'
+
 	return args
+	
 	
 class NVMTag:
 	def __init__(self, TIDX, TNL=None, TNB=None, TLL=None, TLM=None, TagNum=0, TagLength=0):
