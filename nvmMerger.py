@@ -35,43 +35,31 @@ def optParser():
 	print '\n*Your python version is ' + py_ver_str
 	sDescription = '*** nvmMerger merges two NVM text/bin files into one'
 	sDescription += ', and file extension will decide merging into bin/text file ***'
+
 	#if py_ver <= PYTHON_VERSION:
 	if py_ver >= PYTHON_VERSION:
 		import argparse
 		print '*Use argparse module\n'
 		parser = argparse.ArgumentParser(description = sDescription)
 		parser.add_argument('input_files', nargs='+', help='NVM bin/text files to merge')
-		parser.add_argument('-o', '--output', metavar='output file', 
+		parser.add_argument('-o', '--output', metavar='output_file', 
 				type=str, default=DEFAULT_FILE_OUTPUT, 
 				help='NVM bin/text output file name after merger')
-		#parser.add_argument('-f', metavar='first_file', type=str, 
-		#		required=True, help='First nvm/bin file, the base NVM')
-		#parser.add_argument('-s', metavar='second_file', type=str, 
-		#		required=True, help='Second nvm/bin file to add on top of firs file')
-		#parser.add_argument('-m', metavar='merged_file', type=str, 
-		#		required=True, help='Merged nvm/bin file')
 		#parser.print_help()
 		args = parser.parse_args()
-		#input_files.append(args.f)
-		#input_files.append(args.s)
-		#input_files.append(args.m)
 		input_files = args.input_files
 		output_file = args.output
 	else:
 		print '*Use optparse module\n'
 		from optparse import OptionParser
-		usage = 'nvmMerger.py [-h] -f first_file -s second_file -m merged_file'
+		usage = 'nvmMerger.py [-h] [-o output_file] input_files [input_files ...]'
 		parser = OptionParser(usage, description = sDescription)
-		parser.add_option('-f', type='string', dest='f', help='First nvm/bin file, the base NVM')
-		parser.add_option('-s', type='string', dest='s', help='Second nvm/bin file to add on top of firs file')
-		parser.add_option('-m', type='string', dest='m', help='Merged nvm/bin file')
+		parser.add_option('-o', '--output', type='string', 
+				help='NVM bin/text output file name after merger')
 		(options, args) = parser.parse_args()
-		input_files.append(options.f)
-		input_files.append(options.s)
-		input_files.append(options.m)
+		input_files = args
+		output_file = options.output
 		
-
-	
 	
 class NVMTag:
 	def __init__(self, TIDX, TNL=None, TNB=None, TLL=None, TLM=None, TagNum=0, TagLength=0):
