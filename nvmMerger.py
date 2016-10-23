@@ -8,6 +8,7 @@ from datetime import datetime
 # use optparse for python version lower than 2.7
 # argparse was added since 2.7
 PYTHON_VERSION = 0x02070000
+
 NVM_TLV_DATA_START = 4
 NVM_TLV_TAG = 2
 NVM_TLV_LEN = 2
@@ -19,41 +20,55 @@ TAG_NUM = 0
 list_f = []
 list_s = []
 list_m = []
-filename_list = []
+input_files = []
+output_file = ''
+DEFAULT_FILE_OUTPUT = 'merged_nvm_' + datetime.now().strftime('%H%M%S')
 #
 MERGER_MODE = ''
 BIN_MODE = 'bin'
 NVM_MODE = 'nvm'
 
 def optParser():
+	global input_files, output_file
 	py_ver = sys.hexversion
 	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
 	print '\n*Your python version is ' + py_ver_str
+	sDescription = '*** nvmMerger merges two NVM text/bin files into one'
+	sDescription += ', and file extension will decide merging into bin/text file ***'
 	#if py_ver <= PYTHON_VERSION:
 	if py_ver >= PYTHON_VERSION:
 		import argparse
 		print '*Use argparse module\n'
-		parser = argparse.ArgumentParser(description='*** nvmMerger merges two NVM text/bin files into one ***')
-		parser.add_argument('-f', metavar='first_file', type=str, required=True, help='First nvm/bin file, the base NVM')
-		parser.add_argument('-s', metavar='second_file', type=str, required=True, help='Second nvm/bin file to add on top of firs file')
-		parser.add_argument('-m', metavar='merged_file', type=str, required=True, help='Merged nvm/bin file')
+		parser = argparse.ArgumentParser(description = sDescription)
+		parser.add_argument('input_files', nargs='+', help='NVM bin/text files to merge')
+		parser.add_argument('-o', '--output', metavar='output file', 
+				type=str, default=DEFAULT_FILE_OUTPUT, 
+				help='NVM bin/text output file name after merger')
+		#parser.add_argument('-f', metavar='first_file', type=str, 
+		#		required=True, help='First nvm/bin file, the base NVM')
+		#parser.add_argument('-s', metavar='second_file', type=str, 
+		#		required=True, help='Second nvm/bin file to add on top of firs file')
+		#parser.add_argument('-m', metavar='merged_file', type=str, 
+		#		required=True, help='Merged nvm/bin file')
 		#parser.print_help()
 		args = parser.parse_args()
-		filename_list.append(args.f)
-		filename_list.append(args.s)
-		filename_list.append(args.m)
+		#input_files.append(args.f)
+		#input_files.append(args.s)
+		#input_files.append(args.m)
+		input_files = args.input_files
+		output_file = args.output
 	else:
 		print '*Use optparse module\n'
 		from optparse import OptionParser
 		usage = 'nvmMerger.py [-h] -f first_file -s second_file -m merged_file'
-		parser = OptionParser(usage)
+		parser = OptionParser(usage, description = sDescription)
 		parser.add_option('-f', type='string', dest='f', help='First nvm/bin file, the base NVM')
 		parser.add_option('-s', type='string', dest='s', help='Second nvm/bin file to add on top of firs file')
 		parser.add_option('-m', type='string', dest='m', help='Merged nvm/bin file')
 		(options, args) = parser.parse_args()
-		filename_list.append(options.f)
-		filename_list.append(options.s)
-		filename_list.append(options.m)
+		input_files.append(options.f)
+		input_files.append(options.s)
+		input_files.append(options.m)
 		
 
 	
@@ -290,34 +305,35 @@ def mergelists(listf, lists):
 # main function
 def nvmMerger():
 	optParser()
-	# Check file format and decides MODE
-	if not nvmChecker(filename_list[0], filename_list[1]):
-		exit()
+	print input_files
+	print output_file
+	## Check file format and decides MODE
+	#if not nvmChecker(input_files[0], input_files[1]):
+	#	exit()
 
-	print ' Pass input file checks, starting to merge...'
+	#print ' Pass input file checks, starting to merge...'
+	#ml = input_files[2].split('.')
+	#if MERGER_MODE == BIN_MODE and ml[-1] == 'bin':
+	#	m = open(input_files[2], 'w+b')
+	#	bin2list(input_files[0], list_f)
+	#	bin2list(input_files[1], list_s)
+	#	list_m = mergelists(list_f, list_s)	
+	#	#
+	#	list2bin(list_m, m)
+	#	m.close()
+	#elif MERGER_MODE == NVM_MODE and ml[-1] == 'nvm':
+	#	m = open(input_files[2], 'w+')
+	#	nvm2list(input_files[0], list_f)
+	#	nvm2list(input_files[1], list_s)
+	#	list_m = mergelists(list_f, list_s)	
+	#	writeHeaderToFile(m)
+	#	list2NVMfile(list_m, m)
+	#	m.close()
+	#else:
+	#	print '\n\tOutput file extension is not matched with input files'	
+	#	print '\tMerge failed\n'
+	#	exit()
 
-	ml = filename_list[2].split('.')
-	if MERGER_MODE == BIN_MODE and ml[-1] == 'bin':
-		m = open(filename_list[2], 'w+b')
-		bin2list(filename_list[0], list_f)
-		bin2list(filename_list[1], list_s)
-		list_m = mergelists(list_f, list_s)	
-		#
-		list2bin(list_m, m)
-		m.close()
-	elif MERGER_MODE == NVM_MODE and ml[-1] == 'nvm':
-		m = open(filename_list[2], 'w+')
-		nvm2list(filename_list[0], list_f)
-		nvm2list(filename_list[1], list_s)
-		list_m = mergelists(list_f, list_s)	
-		writeHeaderToFile(m)
-		list2NVMfile(list_m, m)
-		m.close()
-	else:
-		print '\n\tOutput file extension is not matched with input files'	
-		print '\tMerge failed\n'
-		exit()
-
-	print '\n\tMerge completes\n'
+	#print '\n\tMerge completes\n'
 
 nvmMerger()
