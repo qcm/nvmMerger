@@ -251,24 +251,27 @@ def list2NVMfile(nvm_list, fobj):
 
 
 # populate all nvms into the list
-def nvm2list(fname, nvm_list):
-	tagIndex = 0
-	tagNum = 0
-	tagLen = 0
-	with open(fname, 'r') as fobj:
-		for line in fobj:
-			if 'TagNum' in line:
-				tagNum = int(line.strip('TagNum ='), 10)
-			elif 'TagLength' in line:
-				tagLen = int(line.strip('TagLength ='), 10)
-			elif 'TagValue' in line:
-				nvm_list.append(NVMTag(tagIndex,TagNum=tagNum,TagLength=tagLen))
-				nvm_list[tagIndex].inputval(valstr=line)
-				#nvm_list[tagIndex].printall()
-				tagIndex += 1
-			else:
-				continue
-		fobj.close()
+def nvm2list(flist, nvm_list):
+	nlindex = 0
+	for fname in flist:
+		tagIndex = 0
+		tagNum = 0
+		tagLen = 0
+		with open(fname, 'r') as fobj:
+			for line in fobj:
+				if 'TagNum' in line:
+					tagNum = int(line.strip('TagNum ='), 10)
+				elif 'TagLength' in line:
+					tagLen = int(line.strip('TagLength ='), 10)
+				elif 'TagValue' in line:
+					nvm_list.append(NVMTag(tagIndex,TagNum=tagNum,TagLength=tagLen))
+					nvm_list[nlindex].inputval(valstr=line)
+					#nvm_list[nlindex].printall()
+					tagIndex += 1
+					nlindex += 1
+				else:
+					continue
+			fobj.close()
 
 
 # merge two input lists and sort them based on Tag num
@@ -294,7 +297,7 @@ def mergelists(listm):
 	TAG_NUM = len(complete_list) 
 	for i in range(TAG_NUM):
 		complete_list[i].TagIndex = i
-		complete_list[i].printall()
+		#complete_list[i].printall()
 
 	return complete_list
 	
@@ -315,22 +318,22 @@ def nvmMerger():
 		m = open(ofname, 'w+b')
 		bin2list(input_files, list_input)
 		#print len(list_input)
-		list_m = mergelists(list_input)	
+		list_output = mergelists(list_input)	
 		#
-		list2bin(list_m, m)
+		list2bin(list_output, m)
 		m.close()
-	elif MERGER_MODE == NVM_MODE and output_file[-3:] == 'nvm':
-		m = open(output_file, 'w+')
-	#	nvm2list(input_files, list_input)
-	#	list_m = mergelists(list_f, list_s)	
-	#	writeHeaderToFile(m)
-	#	list2NVMfile(list_m, m)
-	#	m.close()
-	#else:
-	#	print '\n\tOutput file extension is not matched with input files'	
-	#	print '\tMerge failed\n'
-	#	exit()
+	elif MERGER_MODE == NVM_MODE:
+		ofname = DEFAULT_FILE_OUTPUT + '.nvm'
+		if output_file[-3:] == 'nvm':
+			ofname = output_file
+			
+		m = open(ofname, 'w+')
+		nvm2list(input_files, list_input)
+		list_output = mergelists(list_input)	
+		writeHeaderToFile(m)
+		list2NVMfile(list_output, m)
+		m.close()
 
-	#print '\n\tMerge completes\n'
+	print '\n\tMerge completes\n'
 
 nvmMerger()
