@@ -9,6 +9,7 @@ from datetime import datetime
 # argparse was added since 2.7
 PYTHON_VERSION = 0x02070000
 
+NVM_TLV_VERSION = b'\x02'
 NVM_TLV_DATA_START = 4
 NVM_TLV_TAG = 2
 NVM_TLV_LEN = 2
@@ -33,8 +34,9 @@ def optParser():
 	py_ver = sys.hexversion
 	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
 	print '\n*Your python version is ' + py_ver_str
-	sDescription = '*** nvmMerger merges two NVM text/bin files into one'
-	sDescription += ', and file extension will decide merging into bin/text file ***'
+	sDescription = ' nvmMerger merges two NVM text/bin files into one'
+	sDescription += ', and file extension will decide merging into bin/text file.'
+	sDescription += '\n Note: if tags are duplicated, further right file has precedence'
 
 	#if py_ver <= PYTHON_VERSION:
 	if py_ver >= PYTHON_VERSION:
@@ -109,65 +111,59 @@ class NVMTag:
 # check if: 
 #	1) files' extension are bin or nvm
 #	2) the NVM file is valid
-def nvmChecker(fname, sname):
+def nvmChecker(flist):
 	# check the file extension
-	fl = fname.split('.')
-	sl = sname.split('.')
 	global MERGER_MODE
-	if fl[-1] == 'bin' and sl[-1] == 'bin':
+	ftlist = []
+	for fname in flist:
+		#print fname[-3:]
+		ftlist.append(fname[-3:])
+
+	if ftlist.count('bin') == len(ftlist):
 		MERGER_MODE = BIN_MODE
-	elif fl[-1] == 'nvm' and sl[-1] == 'nvm':
+	elif ftlist.count('nvm') == len(ftlist):
 		MERGER_MODE = NVM_MODE
 	else:
 		print '\n\tInput file extensions not valid, exit...\n'
 		return False	
 
 	if MERGER_MODE == BIN_MODE:
-		# extract the NVM header
-		with open(fname, 'rb') as f:
-			fheader = f.read(NVM_TLV_DATA_START)
-			f.close()
-		with open(sname, 'rb') as s:
-			sheader = s.read(NVM_TLV_DATA_START)
-			s.close()
-		#print binascii.b2a_hex(fheader[0])
-		#print binascii.b2a_hex(sheader[0])
-		# first type is the TLV type
-		if fheader[0]==sheader[0]:
-			#print binascii.b2a_hex(fheader)
-			print ' Note: if tags are duplicated, the second file will overwrite first one'
-		else:
-			print '\n\tTwo NVM have different headers, exit...\n'
-			return False
-
-	if MERGER_MODE == NVM_MODE:
-		#print 'NVM MODE
-		f_tag_num = -1
-		s_tag_num = -1
-		try:
-			with open(fname, 'r') as f:
-				for line in f:
-					if '[Tag]' in line:
-						f_tag_num = int(f.next().strip('Num ='),10)
-						break
-				f.close()
-			with open(sname, 'r') as s:
-				for line in s:
-					if '[Tag]' in line:
-						s_tag_num = int(s.next().strip('Num ='),10)
-						break
-				s.close()
-				
-			if f_tag_num <= 0:
-				print '\n\t' + fname + ' has improper NVM text format, exit...\n'
+		for fname in flist:
+			try:
+				# extract the NVM header
+				with open(fname, 'rb') as f:
+					fheader = f.read(NVM_TLV_DATA_START)
+					f.close()
+				#print binascii.b2a_hex(fheader[0])
+				# first type is the TLV type
+				if fheader[0] != NVM_TLV_VERSION:
+					print '\n\tTwo NVM have different headers, exit...\n'
+					return False
+			except IOError:
+				print '\n\t' + fname + ' not exist, exit...\n'
 				return False
-			elif s_tag_num <= 0:
-				print '\n\t' + sname + ' has improper NVM text format, exit...\n'
-				return False
-		except ValueError:
-			print '\n\tFiles have improper NVM text format, exit...\n'
-			return False
 
+	elif MERGER_MODE == NVM_MODE:
+		for fname in flist:
+			f_tag_num = -1
+			try:
+				with open(fname, 'r') as f:
+					for line in f:
+						if '[Tag]' in line:
+							f_tag_num = int(f.next().strip('Num ='),10)
+							break
+					f.close()
+					
+				if f_tag_num <= 0:
+					print '\n\t' + fname + ' has improper NVM text format, exit...\n'
+					return False
+			except ValueError:
+				print '\n\tFiles have improper NVM text format, exit...\n'
+				return False
+			except IOError:
+				print '\n\t' + fname + ' not exist, exit...\n'
+				return False
+	
 	return True
 
 # populate all nvms into the list
@@ -293,13 +289,11 @@ def mergelists(listf, lists):
 # main function
 def nvmMerger():
 	optParser()
-	print input_files
-	print output_file
 	## Check file format and decides MODE
-	#if not nvmChecker(input_files[0], input_files[1]):
-	#	exit()
+	if not nvmChecker(input_files):
+		exit()
 
-	#print ' Pass input file checks, starting to merge...'
+	print ' Pass input file checks, starting to '+ MERGER_MODE + ' merger...'
 	#ml = input_files[2].split('.')
 	#if MERGER_MODE == BIN_MODE and ml[-1] == 'bin':
 	#	m = open(input_files[2], 'w+b')
