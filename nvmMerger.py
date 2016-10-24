@@ -95,6 +95,7 @@ class NVMTag:
 			print '\n\tNo TagValue inserted\n'
 	
 	def printall(self):
+		print '------'
 		if MERGER_MODE == BIN_MODE:
 			print binascii.b2a_hex(self.TagNumLSB)
 			print binascii.b2a_hex(self.TagNumMSB)
@@ -167,25 +168,27 @@ def nvmChecker(flist):
 
 # populate all nvms into the list
 def bin2list(flist, nvm_list):
+	nlindex = 0
 	for fname in flist:
 		finfo = os.stat(fname)
 		fsize = finfo.st_size
-		#print fsize
 		# open the file
 		with open(fname, 'rb+') as fobj:
-			i = 0
 			# Move cursor to where data starts
 			fobj.seek(NVM_TLV_DATA_START)
-			#for i in range(3):
+			i = 0
 			while (fobj.tell() < fsize) : 
 				nvm_list.append(
 					NVMTag(i, fobj.read(1), fobj.read(1), fobj.read(1), fobj.read(1))
 				)	
 				fobj.seek(NVM_TLV_ZERO_PADDING, 1)
-				nvm_list[i].inputval(fobj)
+				nvm_list[nlindex].inputval(fobj)
 				i += 1
+				nlindex += 1
 			#print fobj.tell()
 			fobj.close()
+	#for nvm in nvm_list:
+	#	nvm.printall()
 
 # write the list to BIN file
 def list2bin(nvm_list, fobj):
@@ -269,21 +272,16 @@ def nvm2list(fname, nvm_list):
 
 
 # merge two input lists and sort them based on Tag num
-def mergelists(listf, lists):
+def mergelists(listm):
 	global TAG_NUM
-	for nvms in reversed(lists):
-		for nvmf in listf:
-			if nvms.TagNum == nvmf.TagNum:
-				#listf[nvmf.TagIndex].printall()
-				listf.pop(nvmf.TagIndex)	
-	listm = listf + lists
-	TAG_NUM = len(listm) 
-	# sort the merged list	
 	nvm_list = sorted(listm, key=lambda nvm: nvm.TagNum)
-	# redefine TagIndex after merging
-	for i in range(TAG_NUM):
-		nvm_list[i].TagIndex = i
-
+#			if nvms.TagNum == nvmf.TagNum:
+#	TAG_NUM = len(listm) 
+#	# sort the merged list	
+#	# redefine TagIndex after merging
+#	for i in range(TAG_NUM):
+#		nvm_list[i].TagIndex = i
+#
 	return nvm_list
 	
 # main function
@@ -302,11 +300,11 @@ def nvmMerger():
 
 		m = open(ofname, 'w+b')
 		bin2list(input_files, list_input)
-		print len(list_input)
-	#	list_m = mergelists(list_input)	
-	#	#
-	#	list2bin(list_m, m)
-	#	m.close()
+		#print len(list_input)
+		list_m = mergelists(list_input)	
+		#
+		list2bin(list_m, m)
+		m.close()
 	elif MERGER_MODE == NVM_MODE and output_file[-3:] == 'nvm':
 		m = open(output_file, 'w+')
 	#	nvm2list(input_files, list_input)
