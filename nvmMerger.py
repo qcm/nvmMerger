@@ -96,6 +96,7 @@ class NVMTag:
 	
 	def printall(self):
 		print '------'
+		print self.TagNum
 		if MERGER_MODE == BIN_MODE:
 			print binascii.b2a_hex(self.TagNumLSB)
 			print binascii.b2a_hex(self.TagNumMSB)
@@ -104,7 +105,6 @@ class NVMTag:
 			for i in range(self.TagLength):
 				print binascii.b2a_hex(self.TagValue[i])
 		if MERGER_MODE == NVM_MODE:
-			print self.TagNum
 			print self.TagLength
 			print self.TagValue[0]
 
@@ -275,14 +275,28 @@ def nvm2list(fname, nvm_list):
 def mergelists(listm):
 	global TAG_NUM
 	nvm_list = sorted(listm, key=lambda nvm: nvm.TagNum)
-#			if nvms.TagNum == nvmf.TagNum:
-#	TAG_NUM = len(listm) 
-#	# sort the merged list	
-#	# redefine TagIndex after merging
-#	for i in range(TAG_NUM):
-#		nvm_list[i].TagIndex = i
-#
-	return nvm_list
+	for nvm in nvm_list:
+		for nvmr in reversed(nvm_list):
+			if nvm.TagNum == nvmr.TagNum:
+				if nvm is not nvmr:
+					#print 'Same TagNum but not same object: ' + str(nvm.TagNum)	
+					#nvm.printall()
+					#nvmr.printall()
+					nvm.TagNum = -1
+					
+	TAG_NUM = len(nvm_list) 
+	complete_list = []
+	# redefine TagIndex after merging
+	for i in range(TAG_NUM):
+		if nvm_list[i].TagNum != -1:
+			complete_list.append(nvm_list[i])
+
+	TAG_NUM = len(complete_list) 
+	for i in range(TAG_NUM):
+		complete_list[i].TagIndex = i
+		complete_list[i].printall()
+
+	return complete_list
 	
 # main function
 def nvmMerger():
