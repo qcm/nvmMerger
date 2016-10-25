@@ -29,6 +29,7 @@ MIX_MODE = False
 BIN_MODE = 'bin'
 NVM_MODE = 'nvm'
 
+# command-line input processor
 def optParser():
 	global input_files, output_file
 	py_ver = sys.hexversion
@@ -38,7 +39,6 @@ def optParser():
 	sDescription += ', and file extension will decide merging into bin/text file.'
 	sDescription += '\n Note: if tags are duplicated, further right file has precedence'
 
-	#if py_ver <= PYTHON_VERSION:
 	if py_ver >= PYTHON_VERSION:
 		import argparse
 		#print '*Use argparse module\n'
@@ -52,7 +52,7 @@ def optParser():
 		input_files = args.input_files
 		output_file = args.output
 	else:
-		print '*Use optparse module\n'
+		#print '*Use optparse module\n'
 		from optparse import OptionParser
 		usage = 'nvmMerger.py [-h] [-o output_file] input_files [input_files ...]'
 		parser = OptionParser(usage, description = sDescription)
@@ -62,7 +62,17 @@ def optParser():
 		input_files = args
 		output_file = options.output
 		
-	
+# class to represent NVM tag
+# TagIndex: Tag0, Tag1, ...
+# TagNum: integer representation of Tag #
+# TagNumLSB: bin representation of Tag #
+# TagNumMSB: bin representation of Tag #
+# TagLength: integer representation of Tag length	
+# TagLengthLSB: bin representation of Tag length	
+# TagLengthMSB: bin representation of Tag length	
+# TagValue: 
+#	binary mode represented by a list of bin values
+#	text mode represented by a list of str, only first element used
 class NVMTag:
 	def __init__(self, TIDX, TNL=None, TNB=None, TLL=None, TLM=None, TagNum=0, TagLength=0):
 		self.TagIndex = TIDX
@@ -75,23 +85,28 @@ class NVMTag:
 			self.TagNumMSB = TNB
 			self.TagLengthLSB = TLL
 			self.TagLengthMSB = TLM
+		else:
+			self.TagNumLSB = binascii.a2b_hex(hex((self.TagNum % 256)).lstrip('0x').zfill(2))
+			self.TagNumMSB = binascii.a2b_hex(hex((self.TagNum / 256)).lstrip('0x').zfill(2))
+			self.TagLengthLSB = binascii.a2b_hex(hex((self.TagLength % 256)).lstrip('0x').zfill(2))
+			self.TagLengthMSB = binascii.a2b_hex(hex((self.TagLength / 256)).lstrip('0x').zfill(2))
 
 	
 	def inputval(self, finput=None, valstr=None):
 		if MERGER_MODE == BIN_MODE and finput is not None:
 			iLSB = int(binascii.b2a_hex(self.TagLengthLSB), 16)
 			iMSB = int(binascii.b2a_hex(self.TagLengthMSB), 16)
-			self.TagLength = iLSB + iMSB*16
+			self.TagLength = iLSB + iMSB*16*16
 			nLSB = int(binascii.b2a_hex(self.TagNumLSB), 16)
 			nMSB = int(binascii.b2a_hex(self.TagNumMSB), 16)
-			self.TagNum = nLSB + nMSB*16
+			self.TagNum = nLSB + nMSB*16*16
 			for i in range(self.TagLength):
 				x = finput.read(1)
 				self.TagValue.append(x)
 
 		elif MERGER_MODE == NVM_MODE and valstr is not None:
-			val = valstr.split('=')
-			self.TagValue.append(val[1])
+			valist = valstr.split('=')
+			self.TagValue.append(valist[1])
 		else:
 			print '\n\tNo TagValue inserted\n'
 	
@@ -205,8 +220,16 @@ def list2bin(nvm_list, fobj):
 		fobj.write(nvm.TagLengthMSB)
 		for j in range(NVM_TLV_ZERO_PADDING):
 			fobj.write(b'\x00')
-		for j in range(nvm.TagLength):
-			fobj.write(nvm.TagValue[j])
+
+		if not MIX_MODE:
+			for j in range(nvm.TagLength):
+				fobj.write(nvm.TagValue[j])
+		else:
+			# strip CR and LF to avoid TypeError exception from binascii
+			valist = nvm.TagValue[0].strip('\r\n').split(' ')
+			for val in valist:
+				#print val
+				fobj.write(binascii.a2b_hex(val))
 
 	#print taglen_sum
 	tmp = hex(taglen_sum).lstrip('0x').zfill(6)
@@ -356,17 +379,20 @@ def nvmMerger():
 		m.close()
 
 	if MIX_MODE:
-		if output_file[-3:] == 'nvm':
-			try:
-				with open(output_file, 'w+') as m:
-					writeHeaderToFile(m)
-					list2NVMfile(list_output, m)
-					m.close()
-			except IOError:
-				print ' Cannot open \"' + output_file + '\"\n'
-		else:
-			pass
+		try:
+			if output_file[-3:] == 'nvm':
+					with open(output_file, 'w+') as m:
+						writeHeaderToFile(m)
+						list2NVMfile(list_output, m)
+						m.close()
+			else:
+					with open(output_file, 'w+b') as m:
+						list2bin(list_output, m)
+						m.close()
+		except IOError:
+			print ' Cannot open \"' + output_file + '\"\n'
 
 	print '\n\tMerge completes\n'
+
 
 nvmMerger()
