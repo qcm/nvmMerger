@@ -221,10 +221,10 @@ def list2bin(nvm_list, fobj):
 		for j in range(NVM_TLV_ZERO_PADDING):
 			fobj.write(b'\x00')
 
-		if not MIX_MODE:
+		if MERGER_MODE == BIN_MODE:
 			for j in range(nvm.TagLength):
 				fobj.write(nvm.TagValue[j])
-		else:
+		elif MERGER_MODE == NVM_MODE:
 			# strip CR and LF to avoid TypeError exception from binascii
 			valist = nvm.TagValue[0].strip('\r\n').split(' ')
 			for val in valist:
@@ -267,11 +267,11 @@ def list2NVMfile(nvm_list, fobj):
 		sTagNum = 'TagNum = ' + str(nvm.TagNum) + '\n'
 		sTagLength = 'TagLength = ' + str(nvm.TagLength) + '\n'
 		sTagValue = 'TagValue =' 
-		if not MIX_MODE:
+		if MERGER_MODE == NVM_MODE:
 			sTagValue += nvm.TagValue[0] 
 			if nvm.TagIndex != TAG_NUM - 1:
 				sTagValue += '\n'
-		else:
+		elif MERGER_MODE == BIN_MODE:
 			for i in nvm.TagValue:
 				sTagValue += ' '
 				sTagValue += binascii.b2a_hex(i)
