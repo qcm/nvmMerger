@@ -25,6 +25,7 @@ output_file = ''
 DEFAULT_FILE_OUTPUT = 'merged_nvm_' + datetime.now().strftime('%H%M%S')
 #
 MERGER_MODE = ''
+MIX_MODE = False
 BIN_MODE = 'bin'
 NVM_MODE = 'nvm'
 
@@ -32,7 +33,7 @@ def optParser():
 	global input_files, output_file
 	py_ver = sys.hexversion
 	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
-	print '\n*Your python version is ' + py_ver_str
+	#print '\n*Your python version is ' + py_ver_str
 	sDescription = ' nvmMerger merges two NVM text/bin files into one'
 	sDescription += ', and file extension will decide merging into bin/text file.'
 	sDescription += '\n Note: if tags are duplicated, further right file has precedence'
@@ -40,7 +41,7 @@ def optParser():
 	#if py_ver <= PYTHON_VERSION:
 	if py_ver >= PYTHON_VERSION:
 		import argparse
-		print '*Use argparse module\n'
+		#print '*Use argparse module\n'
 		parser = argparse.ArgumentParser(description = sDescription)
 		parser.add_argument('input_files', nargs='+', help='NVM bin/text files to merge')
 		parser.add_argument('-o', '--output', metavar='output_file', 
@@ -93,6 +94,7 @@ class NVMTag:
 			self.TagValue.append(val[1])
 		else:
 			print '\n\tNo TagValue inserted\n'
+	
 	
 	def printall(self):
 		print '------'
@@ -241,9 +243,19 @@ def list2NVMfile(nvm_list, fobj):
 		sHeader = '[Tag' + str(nvm.TagIndex) + ']\n'
 		sTagNum = 'TagNum = ' + str(nvm.TagNum) + '\n'
 		sTagLength = 'TagLength = ' + str(nvm.TagLength) + '\n'
-		sTagValue = 'TagValue =' + nvm.TagValue[0] 
-		if nvm.TagIndex != TAG_NUM - 1:
+		sTagValue = 'TagValue =' 
+		if not MIX_MODE:
+			sTagValue += nvm.TagValue[0] 
+			if nvm.TagIndex != TAG_NUM - 1:
+				sTagValue += '\n'
+		else:
+			for i in nvm.TagValue:
+				sTagValue += ' '
+				sTagValue += binascii.b2a_hex(i)
 			sTagValue += '\n'
+			if nvm.TagIndex != TAG_NUM - 1:
+				sTagValue += '\n'
+			
 		fobj.write(sHeader)
 		fobj.write(sTagNum)
 		fobj.write(sTagLength)
@@ -304,6 +316,7 @@ def mergelists(listm):
 # main function
 def nvmMerger():
 	global output_file
+	global MIX_MODE
 	optParser()
 	## Check file format and decides MODE
 	if not nvmChecker(input_files):
@@ -314,6 +327,10 @@ def nvmMerger():
 		ofname = DEFAULT_FILE_OUTPUT + '.bin'
 		if output_file[-3:] == 'bin':
 			ofname = output_file
+		elif output_file[-3:] == 'nvm':
+			MIX_MODE = True
+		else:
+			print ' No valid output file name specified, using default one...'
 
 		m = open(ofname, 'w+b')
 		bin2list(input_files, list_input)
@@ -326,6 +343,10 @@ def nvmMerger():
 		ofname = DEFAULT_FILE_OUTPUT + '.nvm'
 		if output_file[-3:] == 'nvm':
 			ofname = output_file
+		elif output_file[-3:] == 'bin':
+			MIX_MODE = True
+		else:
+			print ' No valid output file name specified, using default one...'
 			
 		m = open(ofname, 'w+')
 		nvm2list(input_files, list_input)
@@ -333,6 +354,18 @@ def nvmMerger():
 		writeHeaderToFile(m)
 		list2NVMfile(list_output, m)
 		m.close()
+
+	if MIX_MODE:
+		if output_file[-3:] == 'nvm':
+			try:
+				with open(output_file, 'w+') as m:
+					writeHeaderToFile(m)
+					list2NVMfile(list_output, m)
+					m.close()
+			except IOError:
+				print ' Cannot open \"' + output_file + '\"\n'
+		else:
+			pass
 
 	print '\n\tMerge completes\n'
 
