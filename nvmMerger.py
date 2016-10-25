@@ -127,7 +127,7 @@ class NVMTag:
 
 # check if: 
 #	1) files' extension are bin or nvm
-#	2) the NVM file is valid
+#	2) the NVM file is valid: now this is version2, so first byte is 0x02
 def nvmChecker(flist):
 	# check the file extension
 	global MERGER_MODE
