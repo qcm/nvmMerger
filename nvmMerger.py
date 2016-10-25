@@ -35,7 +35,7 @@ def optParser():
 	py_ver = sys.hexversion
 	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
 	#print '\n*Your python version is ' + py_ver_str
-	sDescription = ' nvmMerger merges two NVM text/bin files into one'
+	sDescription = ' nvmMerger merges multiple NVM text/bin files into one'
 	sDescription += ', and file extension will decide merging into bin/text file.'
 	sDescription += '\n Note: if tags are duplicated, further right file has precedence'
 
