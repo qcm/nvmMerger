@@ -6,7 +6,9 @@ duplicated NVM tags, the second file's NVM will replace the first ones.
 usage: nvmMerger.py [-h] [-o output_file] input_files [input_files ...]
 
 ## NVM Format
-* First 4 bytes are irrelevant for BT SoC settings
+* First 4 bytes are irrelevant for BT SoC settings:
+	1. First byte indicates the NVM file version. Now the version is '02'
+	2. Second to the fourth byte represent the total file length without this 4 bytes, also little-endian
 * Every tag contains four fields:
 	1. TagNum: 2 bytes
 	2. TagLength: 2 bytes
