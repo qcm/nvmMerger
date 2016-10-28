@@ -9,6 +9,9 @@ from datetime import datetime
 # argparse was added since 2.7
 PYTHON_VERSION = 0x02070000
 
+NVM_TLV_VERSION_BT = b'\x02'
+NVM_TLV_VERSION_FM = b'\x03'
+NVM_TLV_VERSION_BTFM = b'\x04'
 NVM_TLV_VERSION = b'\x02'
 NVM_TLV_DATA_START = 4
 NVM_TLV_TAG = 2
@@ -25,7 +28,7 @@ output_file = ''
 DEFAULT_FILE_OUTPUT = 'merged_nvm_' + datetime.now().strftime('%H%M%S')
 #
 MERGER_MODE = ''
-MIX_MODE = False
+MIX_MODE = False # output involves a bin->nvm/nvm->bin transfer
 BIN_MODE = 'bin'
 NVM_MODE = 'nvm'
 
@@ -153,8 +156,14 @@ def nvmChecker(flist):
 					f.close()
 				#print binascii.b2a_hex(fheader[0])
 				# first type is the TLV type
-				if fheader[0] != NVM_TLV_VERSION:
-					print '\n\tTwo NVM have different headers, exit...\n'
+				if fheader[0] == NVM_TLV_VERSION_BT:
+					continue
+				elif fheader[0] == NVM_TLV_VERSION_FM:
+					continue
+				elif fheader[0] == NVM_TLV_VERSION_BTFM:
+					continue
+				else:
+					print '\n\t' + fname + ' has invalid header, exit...\n'
 					return False
 			except IOError:
 				print '\n\t' + fname + ' not exist, exit...\n'
