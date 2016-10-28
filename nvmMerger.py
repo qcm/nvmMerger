@@ -22,6 +22,8 @@ NVM_BODY_LEN = 0
 TAG_NUM = 0 
 # create lists stores whole bin file
 list_input = []
+list_input_bt = []
+list_input_fm = []
 list_output = []
 input_files = []
 output_file = ''
@@ -31,6 +33,9 @@ MERGER_MODE = ''
 MIX_MODE = False # output involves a bin->nvm/nvm->bin transfer
 BIN_MODE = 'bin'
 NVM_MODE = 'nvm'
+BTFM_MODE = False
+BT_CNT = 0
+FM_CNT = 0
 
 # command-line input processor
 def optParser():
@@ -134,6 +139,7 @@ class NVMTag:
 def nvmChecker(flist):
 	# check the file extension
 	global MERGER_MODE
+	global BT_CNT, FM_CNT
 	ftlist = []
 	for fname in flist:
 		#print fname[-3:]
@@ -157,9 +163,9 @@ def nvmChecker(flist):
 				#print binascii.b2a_hex(fheader[0])
 				# first type is the TLV type
 				if fheader[0] == NVM_TLV_VERSION_BT:
-					continue
+					BT_CNT += 1
 				elif fheader[0] == NVM_TLV_VERSION_FM:
-					continue
+					FM_CNT += 1
 				elif fheader[0] == NVM_TLV_VERSION_BTFM:
 					continue
 				else:
@@ -168,6 +174,9 @@ def nvmChecker(flist):
 			except IOError:
 				print '\n\t' + fname + ' not exist, exit...\n'
 				return False
+		
+		if BT_CNT != len(flist) or FM_CNT != len(flist):
+			BTFM_MODE = True
 
 	elif MERGER_MODE == NVM_MODE:
 		for fname in flist:
@@ -193,15 +202,22 @@ def nvmChecker(flist):
 	
 
 # populate all nvms into the list
-def bin2list(flist, nvm_list):
+def bin2list(flist, btlist=None, fmlist=None):
 	nlindex = 0
 	for fname in flist:
 		finfo = os.stat(fname)
 		fsize = finfo.st_size
 		# open the file
 		with open(fname, 'rb+') as fobj:
-			# Move cursor to where data starts
-			fobj.seek(NVM_TLV_DATA_START)
+			# check the file type
+			# move cursor to where data starts
+			f1 = fobj.read(1)
+			if f1 == NVM_TLV_VERSION_BT:
+			elif f1 == NVM_TLV_VERSION_FM:
+			elif f1 == NVM_TLV_VERSION_BTFM:
+				fobj.seek(2*NVM_TLV_DATA_START)
+			else: 
+				fobj.seek(NVM_TLV_DATA_START)
 			i = 0
 			while (fobj.tell() < fsize) : 
 				nvm_list.append(
@@ -365,10 +381,9 @@ def nvmMerger():
 			print ' No valid output file name specified, using default one...'
 
 		m = open(ofname, 'w+b')
-		bin2list(input_files, list_input)
+		bin2list(input_files, list_input_bt, list_input_fm)
 		#print len(list_input)
 		list_output = mergelists(list_input)	
-		#
 		list2bin(list_output, m)
 		m.close()
 	elif MERGER_MODE == NVM_MODE:
