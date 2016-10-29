@@ -203,30 +203,40 @@ def nvmChecker(flist):
 
 # populate all nvms into the list
 def bin2list(flist, btlist=None, fmlist=None):
-	nlindex = 0
+	btindex = 0
+	fmindex = 0
 	for fname in flist:
 		finfo = os.stat(fname)
 		fsize = finfo.st_size
 		# open the file
-		with open(fname, 'rb+') as fobj:
+		with open(fname, 'rb') as fobj:
 			# check the file type
 			# move cursor to where data starts
 			f1 = fobj.read(1)
 			if f1 == NVM_TLV_VERSION_BT:
+				i = 0
+				fobj.seek(NVM_TLV_DATA_START)
+				while (fobj.tell() < fsize) : 
+					btlist.append(
+						NVMTag(i, fobj.read(1), fobj.read(1), fobj.read(1), fobj.read(1))
+					)	
+					fobj.seek(NVM_TLV_ZERO_PADDING, 1)
+					btlist[btindex].inputval(fobj)
+					i += 1
+					btindex += 1
 			elif f1 == NVM_TLV_VERSION_FM:
+				i = 0
+				fobj.seek(NVM_TLV_DATA_START)
+				while (fobj.tell() < fsize) : 
+					fmlist.append(
+						NVMTag(i, fobj.read(1), fobj.read(1), fobj.read(1), fobj.read(1))
+					)	
+					fobj.seek(NVM_TLV_ZERO_PADDING, 1)
+					fmlist[fmindex].inputval(fobj)
+					i += 1
+					fmindex += 1
 			elif f1 == NVM_TLV_VERSION_BTFM:
 				fobj.seek(2*NVM_TLV_DATA_START)
-			else: 
-				fobj.seek(NVM_TLV_DATA_START)
-			i = 0
-			while (fobj.tell() < fsize) : 
-				nvm_list.append(
-					NVMTag(i, fobj.read(1), fobj.read(1), fobj.read(1), fobj.read(1))
-				)	
-				fobj.seek(NVM_TLV_ZERO_PADDING, 1)
-				nvm_list[nlindex].inputval(fobj)
-				i += 1
-				nlindex += 1
 			#print fobj.tell()
 			fobj.close()
 	#for nvm in nvm_list:
@@ -383,7 +393,7 @@ def nvmMerger():
 		m = open(ofname, 'w+b')
 		bin2list(input_files, list_input_bt, list_input_fm)
 		#print len(list_input)
-		list_output = mergelists(list_input)	
+		list_output = mergelists(list_input_bt)	
 		list2bin(list_output, m)
 		m.close()
 	elif MERGER_MODE == NVM_MODE:
