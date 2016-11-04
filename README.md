@@ -2,6 +2,9 @@
 ## Description
 nvmMerger will merge multiple bin/text formated NVM files into one. If there are
 duplicated NVM tags, the second file's NVM will replace the first ones.
+nvmMerger can also convert format between bin and nvm text format.
+If input file extension are nvm and output is bin, nvmMerger will transfer file from nvm to bin.
+Vice versa.
 
 usage: nvmMerger.py [-h] [-o output_file] input_files [input_files ...]
 
