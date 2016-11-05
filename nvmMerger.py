@@ -107,17 +107,24 @@ class NVMTag:
 			self.TagLengthMSB = binascii.a2b_hex(hex((self.TagLength / 256)).lstrip('0x').zfill(2))
 
 	
-	def inputval(self, finput=None, valstr=None):
-		if MERGER_MODE == BIN_MODE and finput is not None:
+	def inputval(self, finput=None, valstr=None, index=None):
+		if MERGER_MODE == BIN_MODE:
 			iLSB = int(binascii.b2a_hex(self.TagLengthLSB), 16)
 			iMSB = int(binascii.b2a_hex(self.TagLengthMSB), 16)
 			self.TagLength = iLSB + iMSB*16*16
 			nLSB = int(binascii.b2a_hex(self.TagNumLSB), 16)
 			nMSB = int(binascii.b2a_hex(self.TagNumMSB), 16)
 			self.TagNum = nLSB + nMSB*16*16
-			for i in range(self.TagLength):
-				x = finput.read(1)
-				self.TagValue.append(x)
+				
+			if index is None:
+				for i in range(self.TagLength):
+					# use file I/O to read
+					x = finput.read(1)
+					self.TagValue.append(x)
+			else:
+				for i in range(self.TagLength):
+					self.TagValue.append(finput[index])
+					index += 1
 
 		elif MERGER_MODE == NVM_MODE and valstr is not None:
 			valist = valstr.split('=')
@@ -246,24 +253,47 @@ def bin2list(flist, btlist=None, fmlist=None):
 					i += 1
 					fmindex += 1
 			elif fheader[0] == NVM_TLV_VERSION_BTFM:
+				# loop for BT and FM sections
 				flen = getDataLength(fheader)
-				fheader1 = fobj.read(4)
-				len1 = getDataLength(fheader1)
-				fobj.seek(len1, 1)
-				fheader2 = fobj.read(4)
-				len2 = getDataLength(fheader2)
-				# read all mixed data #
-				alldata = fobj.read()
-				if fheader1[0] == NVM_TLV_VERSION_BT:
-					# BT data, put in btlist #
-					print '\n\tBT data format\n'
-					
-				if fheader2[0] == NVM_TLV_VERSION_FM:
-					# FM data, put in fmlist #
-					print '\n\tFM data format\n'
-					pass
+				while(flen > 0):
+					dh = fobj.read(NVM_TLV_DATA_START)
+					dlen = getDataLength(dh)
+					data = fobj.read(dlen,1)
 
-				#while (fobj.tell() < fsize) : 
+					if dh[0] == NVM_TLV_VERSION_BT:
+						# BT data, put in btlist #
+						print '\n\tBT data format\n'
+						i = 0
+						di = 0
+						while(i < dlen):
+							btlist.append(
+								NVMTag(di, data[i], 
+								data[i+1], data[i+2], data[i+3])
+	     						)
+							i += NVM_TLV_TAG + NVM_TLV_LEN 
+							i += NVM_TLV_ZERO_PADDING
+							btlist[di].inputval(finput=data,index=i)
+							i += btlist[di].TagLength
+
+					if dh[0] == NVM_TLV_VERSION_FM:
+						# FM data, put in fmlist #
+						print '\n\tFM data format\n'
+						i = 0
+						di = 0
+						while(i < dlen):
+							fmlist.append(
+								NVMTag(di, data[i], 
+								data[i+1], data[i+2], data[i+3])
+	     						)
+							i += NVM_TLV_TAG + NVM_TLV_LEN 
+							i += NVM_TLV_ZERO_PADDING
+							fmlist[di].inputval(finput=data,index=i)
+							i += fmlist[di].TagLength
+							)
+
+					flen -= NVM_TLV_DATA_START
+					flen -= dlen
+
 			#print fobj.tell()
 			fobj.close()
 	#for nvm in nvm_list:
@@ -296,11 +326,16 @@ def list2bin(nvm_list, fobj):
 	tmp = hex(taglen_sum).lstrip('0x').zfill(6)
 	NVM_BODY_LEN = binascii.a2b_hex(tmp[4:]) + binascii.a2b_hex(tmp[2:4]) + binascii.a2b_hex(tmp[:2])
 	# TBD
+	# still not working if transfer fm.nvm -> fm.bin
+	# also not working on btfm mode
 	global NVM_HEADER
-	if BT_CNT > 0:
-		NVM_HEADER = NVM_TLV_VERSION_BT + NVM_BODY_LEN
-	if FM_CNT > 0:
-		NVM_HEADER = NVM_TLV_VERSION_FM + NVM_BODY_LEN
+	if not BTFM_MODE:
+		if BT_CNT > 0:
+			NVM_HEADER = NVM_TLV_VERSION_BT + NVM_BODY_LEN
+		if FM_CNT > 0:
+			NVM_HEADER = NVM_TLV_VERSION_FM + NVM_BODY_LEN
+	else:
+		pass
 	#print binascii.b2a_hex(NVM_HEADER)
 	fobj.seek(0)
 	fobj.write(NVM_HEADER)
