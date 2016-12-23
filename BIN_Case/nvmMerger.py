@@ -31,12 +31,12 @@ output_file = ''
 DEFAULT_FILE_OUTPUT = 'merged_nvm_' + datetime.now().strftime('%H%M%S')
 #
 MERGER_MODE = ''
-MIX_MODE = False # output involves a bin->nvm/nvm->bin transfer
-BIN_MODE = 'bin'
-NVM_MODE = 'nvm'
+TRANS_MODE = False # output involves a bin->nvm/nvm->bin transfer
+BIN_MODE = 'bin' # merge binary files of NVM
+NVM_MODE = 'nvm' # merge text files of NVM
 BTFM_MODE = False
-BT_CNT = 0
-FM_CNT = 0
+BT_CNT = 0 # BT NVM file counts
+FM_CNT = 0 # FM NVM file counts
 
 # command-line input processor
 def optParser():
@@ -48,8 +48,7 @@ def optParser():
 	sDescription += ', and file extension will decide merging into bin/text file.'
 	sDescription += '\n Note: if tags are duplicated, further right file has precedence'
 
-	if py_ver < PYTHON_VERSION:
-	#if py_ver >= PYTHON_VERSION:
+	if py_ver >= PYTHON_VERSION:
 		import argparse
 		#print '*Use argparse module\n'
 		parser = argparse.ArgumentParser(description = sDescription)
@@ -61,7 +60,7 @@ def optParser():
 		input_files = args.input_files
 		output_file = args.output
 	else:
-		print '*Use optparse module\n'
+		#print '*Use optparse module\n'
 		from optparse import OptionParser
 		usage = 'nvmMerger.py [-h] [-o output_file] input_files [input_files ...]'
 		parser = OptionParser(usage, description = sDescription)
@@ -75,7 +74,7 @@ def optParser():
 		print '\n\tNothing to be done. Exit\n'
 		exit()
 	elif output_file is None:
-		print 'use default name'
+		#print 'use default name'
 		output_file = DEFAULT_FILE_OUTPUT
 		
 # class to represent NVM tag
@@ -108,17 +107,23 @@ class NVMTag:
 			self.TagLengthMSB = binascii.a2b_hex(hex((self.TagLength / 256)).lstrip('0x').zfill(2))
 
 	
-	def inputval(self, finput=None, valstr=None):
-		if MERGER_MODE == BIN_MODE and finput is not None:
+	def inputval(self, finput=None, valstr=None, index=None):
+		if MERGER_MODE == BIN_MODE:
 			iLSB = int(binascii.b2a_hex(self.TagLengthLSB), 16)
 			iMSB = int(binascii.b2a_hex(self.TagLengthMSB), 16)
 			self.TagLength = iLSB + iMSB*16*16
 			nLSB = int(binascii.b2a_hex(self.TagNumLSB), 16)
 			nMSB = int(binascii.b2a_hex(self.TagNumMSB), 16)
 			self.TagNum = nLSB + nMSB*16*16
-			for i in range(self.TagLength):
-				x = finput.read(1)
-				self.TagValue.append(x)
+				
+			if index is None:
+				for i in range(self.TagLength):
+					# use file I/O to read
+					x = finput.read(1)
+					self.TagValue.append(x)
+			else:
+				for i in range(index, index+self.TagLength):
+					self.TagValue.append(finput[i])
 
 		elif MERGER_MODE == NVM_MODE and valstr is not None:
 			valist = valstr.split('=')
@@ -128,8 +133,8 @@ class NVMTag:
 	
 	
 	def printall(self):
-		print '------'
-		print self.TagNum
+		print '/' * 10
+		print 'TagNum: %d' %self.TagNum
 		if MERGER_MODE == BIN_MODE:
 			print binascii.b2a_hex(self.TagNumLSB)
 			print binascii.b2a_hex(self.TagNumMSB)
@@ -140,13 +145,14 @@ class NVMTag:
 		if MERGER_MODE == NVM_MODE:
 			print self.TagLength
 			print self.TagValue[0]
+		print '\\' * 10
 
 # check if: 
 #	1) files' extension are bin or nvm
 #	2) the NVM file is valid: now this is version2, so first byte is 0x02
 def nvmChecker(flist):
 	# check the file extension
-	global MERGER_MODE
+	global MERGER_MODE, BTFM_MODE
 	global BT_CNT, FM_CNT
 	ftlist = []
 	for fname in flist:
@@ -216,8 +222,8 @@ def nvmChecker(flist):
 ## 	 fmlist: a list to save FM NVMTag 
 #
 def bin2list(flist, btlist=None, fmlist=None):
-	btindex = 0
-	fmindex = 0
+	btindex = 0 # index of btlist (across all input files)
+	fmindex = 0 # index of fmlist (across all input files)
 	for fname in flist:
 		finfo = os.stat(fname)
 		fsize = finfo.st_size
@@ -247,33 +253,120 @@ def bin2list(flist, btlist=None, fmlist=None):
 					i += 1
 					fmindex += 1
 			elif fheader[0] == NVM_TLV_VERSION_BTFM:
+				# loop for BT and FM sections
 				flen = getDataLength(fheader)
-				fheader1 = fobj.read(4)
-				len1 = getDataLength(fheader1)
-				fobj.seek(len1, 1)
-				fheader2 = fobj.read(4)
-				len2 = getDataLength(fheader2)
-				# read all mixed data #
-				alldata = fobj.read()
-				if fheader1[0] == NVM_TLV_VERSION_BT:
-					# BT data, put in btlist #
-					print '\n\tBT data format\n'
-					
-				if fheader2[0] == NVM_TLV_VERSION_FM:
-					# FM data, put in fmlist #
-					print '\n\tFM data format\n'
-					pass
+				while(flen > 0):
+					dh = fobj.read(NVM_TLV_DATA_START)
+					dlen = getDataLength(dh)
+					data = fobj.read(dlen)
 
-				#while (fobj.tell() < fsize) : 
+					if dh[0] == NVM_TLV_VERSION_BT:
+						# BT data, put in btlist #
+						print '\n\tBT data dlen: %d\n' %dlen
+						i = 0 # index in data
+						li = btindex # index in list
+						while(i < dlen):
+							btlist.append(
+								NVMTag(li, data[i], 
+								data[i+1], data[i+2], data[i+3])
+	     						)
+							i += NVM_TLV_TAG + NVM_TLV_LEN 
+							i += NVM_TLV_ZERO_PADDING
+							btlist[li].inputval(finput=data,index=i)
+							i += btlist[li].TagLength
+							#btlist[li].printall()
+							li += 1
+						btindex = li
+
+					if dh[0] == NVM_TLV_VERSION_FM:
+						# FM data, put in fmlist #
+						print '\n\tFM data dlen: %d\n' %dlen
+						i = 0 # index in data
+						li = fmindex # index in the list
+						while(i < dlen):
+							fmlist.append(
+								NVMTag(li, data[i], 
+								data[i+1], data[i+2], data[i+3])
+	     						)
+							i += NVM_TLV_TAG + NVM_TLV_LEN 
+							i += NVM_TLV_ZERO_PADDING
+							fmlist[li].inputval(finput=data,index=i)
+							i += fmlist[li].TagLength
+							#fmlist[li].printall()
+							li += 1
+						fmindex = li	
+
+					flen -= NVM_TLV_DATA_START
+					flen -= dlen
+
 			#print fobj.tell()
 			fobj.close()
-	#for nvm in nvm_list:
-	#	nvm.printall()
+
+# append header for BIN file
+def getBinHeader(btype, ilist, llen):
+	if ilist is None:
+		llen = hex(llen).lstrip('0x').zfill(6)
+	elif llen is None:
+		llen = 0
+		for i in ilist:
+			llen += NVM_TLV_TAG + NVM_TLV_LEN + NVM_TLV_ZERO_PADDING + i.TagLength
+		print '*' *10
+		print 'llen %d' %llen
+		print '*' *10
+		llen = hex(llen).lstrip('0x').zfill(6)
+	blen = binascii.a2b_hex(llen[4:]) + binascii.a2b_hex(llen[2:4]) + binascii.a2b_hex(llen[:2]) 
+	return btype + blen
+	
 
 # write the list to BIN file
+# input:
+#	key-value pair (Dictionary)
+#	file object to write
+# {BTHEADER: BTLIST, FMHEADER: FMLIST, ...}	
+def list2bin_(dicts, fobj):
+	# lengh in top-level header, not includes top-level header itself
+	tlv_len = 0
+	if len(dicts) > 1: 
+		# multiple lists, save first 4 bytes for top-level header
+		fobj.seek(NVM_TLV_DATA_START)
+	for bincode in sorted(dicts):
+		nvmlist = dicts[bincode]
+	#for bincode, nvmlist in dicts.items():
+		print '*' *10
+		print binascii.b2a_hex(bincode)
+		print '*' *10
+		# write header for every list
+		fobj.write(getBinHeader(bincode, nvmlist, None))
+		tlv_len += 4
+		# write NVMs
+		for nvm in nvmlist:
+			fobj.write(nvm.TagNumLSB)
+			fobj.write(nvm.TagNumMSB)
+			fobj.write(nvm.TagLengthLSB)
+			fobj.write(nvm.TagLengthMSB)
+			for i in range(NVM_TLV_ZERO_PADDING):
+				fobj.write(b'\x00')
+			if MERGER_MODE == BIN_MODE:
+				for j in range(nvm.TagLength):
+					fobj.write(nvm.TagValue[j])
+			elif MERGER_MODE == TRANS_MODE:
+				# strip CR and LF to avoid TypeError exception from binascii
+				valist = nvm.TagValue[0].strip('\r\n').split(' ')
+				for val in valist:
+					#print val
+					fobj.write(binascii.a2b_hex(val))
+			tlv_len += (NVM_TLV_TAG + NVM_TLV_LEN + NVM_TLV_ZERO_PADDING + nvm.TagLength)
+
+	# write top-level header
+	if len(dicts) > 1: 
+		fobj.seek(0)
+		fobj.write(getBinHeader(NVM_TLV_VERSION_BTFM, None, tlv_len))
+		
+
 def list2bin(nvm_list, fobj):
 	taglen_sum = 0
 	fobj.seek(NVM_TLV_DATA_START)
+
 	for nvm in nvm_list:
 		taglen_sum += (NVM_TLV_TAG + NVM_TLV_LEN + NVM_TLV_ZERO_PADDING + nvm.TagLength)
 		fobj.write(nvm.TagNumLSB)
@@ -286,7 +379,7 @@ def list2bin(nvm_list, fobj):
 		if MERGER_MODE == BIN_MODE:
 			for j in range(nvm.TagLength):
 				fobj.write(nvm.TagValue[j])
-		elif MERGER_MODE == NVM_MODE:
+		elif MERGER_MODE == TRANS_MODE:
 			# strip CR and LF to avoid TypeError exception from binascii
 			valist = nvm.TagValue[0].strip('\r\n').split(' ')
 			for val in valist:
@@ -297,11 +390,16 @@ def list2bin(nvm_list, fobj):
 	tmp = hex(taglen_sum).lstrip('0x').zfill(6)
 	NVM_BODY_LEN = binascii.a2b_hex(tmp[4:]) + binascii.a2b_hex(tmp[2:4]) + binascii.a2b_hex(tmp[:2])
 	# TBD
+	# still not working if transfer fm.nvm -> fm.bin
+	# also not working on btfm mode
 	global NVM_HEADER
-	if BT_CNT > 0:
-		NVM_HEADER = NVM_TLV_VERSION_BT + NVM_BODY_LEN
-	if FM_CNT > 0:
-		NVM_HEADER = NVM_TLV_VERSION_FM + NVM_BODY_LEN
+	if not BTFM_MODE:
+		if BT_CNT > 0:
+			NVM_HEADER = NVM_TLV_VERSION_BT + NVM_BODY_LEN
+		if FM_CNT > 0:
+			NVM_HEADER = NVM_TLV_VERSION_FM + NVM_BODY_LEN
+	else:
+		pass
 	#print binascii.b2a_hex(NVM_HEADER)
 	fobj.seek(0)
 	fobj.write(NVM_HEADER)
@@ -388,9 +486,9 @@ def nvm2list(flist, nvm_list):
 
 
 # merge input lists and sort them based on Tag num
-def mergelists(listm):
+def mergelists(ilist):
 	global TAG_NUM
-	nvm_list = sorted(listm, key=lambda nvm: nvm.TagNum)
+	nvm_list = sorted(ilist, key=lambda nvm: nvm.TagNum)
 	for nvm in nvm_list:
 		for nvmr in reversed(nvm_list):
 			if nvm.TagNum == nvmr.TagNum:
@@ -417,7 +515,7 @@ def mergelists(listm):
 # main function
 def nvmMerger():
 	global output_file
-	global MIX_MODE
+	global TRANS_MODE
 	optParser()
 	## Check file format and decides MODE
 	if not nvmChecker(input_files):
@@ -429,30 +527,46 @@ def nvmMerger():
 		if output_file[-3:] == 'bin':
 			ofname = output_file
 		elif output_file[-3:] == 'nvm':
-			MIX_MODE = True
+			TRANS_MODE = True
 			ofname = output_file
 		else:
 			print ' No valid output file name specified, using default one...'
 
 		m = open(ofname, 'w+b')
 		bin2list(input_files, list_input_bt, list_input_fm)
-		#print len(list_input)
+		#for bnvm in list_input_bt:
+		#	bnvm.printall()
+
 		if BTFM_MODE:
-			pass
+			#pass
+			bt_list_output = mergelists(list_input_bt)
+			fm_list_output = mergelists(list_input_fm)
+			print '~~~'
+			for bnvm in bt_list_output:
+				bnvm.printall()
+			#return
+			for fnvm in fm_list_output:
+				fnvm.printall()
+			#return
+			complete_dic = { 
+					NVM_TLV_VERSION_BT: bt_list_output,
+					NVM_TLV_VERSION_FM: fm_list_output
+					}
+			list2bin_(complete_dic, m)		
 		else:
 			# BT-only or FM-only merger
 			if BT_CNT > 0: 
 				list_output = mergelists(list_input_bt)	
 			if FM_CNT > 0: 
 				list_output = mergelists(list_input_fm)	
-		list2bin(list_output, m)
+			list2bin(list_output, m)
 		m.close()
 	elif MERGER_MODE == NVM_MODE:
 		ofname = DEFAULT_FILE_OUTPUT + '.nvm'
 		if output_file[-3:] == 'nvm':
 			ofname = output_file
 		elif output_file[-3:] == 'bin':
-			MIX_MODE = True
+			TRANS_MODE = True
 			ofname = output_file
 		else:
 			print ' No valid output file name specified, using default one...'
@@ -464,7 +578,7 @@ def nvmMerger():
 		list2NVMfile(list_output, m)
 		m.close()
 
-	if MIX_MODE:
+	if TRANS_MODE:
 		try:
 			if output_file[-3:] == 'nvm':
 					with open(output_file, 'w+') as m:
