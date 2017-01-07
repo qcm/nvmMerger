@@ -23,3 +23,37 @@ usage: nvmMerger.py [-h] [-o output_file] input_files [input_files ...]
 	3. `TagLength = (TagLengthMSB << 8) + TagLengthLSB`
 	4. *.nvm is little-endian based, so we'll see:
 		[TagNumLSB, TagNumMSB] [TagLengthLSB, TagLengthMSB] 0x00 ... 0x00 [TagValue]
+## Example Usage
+BT multiple bin merge
+
+FM multiple bin merge
+
+* BT multiple nvm merge
+	nvmMerger.py intput0.nvm input1.nvm -o output.nvm
+	nvmMerger.py --BT intput0.nvm input1.nvm -o output.nvm
+
+FM multiple nvm merge
+
+BT single bin->nvm conversion
+
+BT single nvm->bin conversion
+
+FM single bin->nvm conversion
+
+FM single nvm->bin conversion
+
+BT multiple bin->nvm conversion
+
+BT multiple nvm->bin conversion
+
+FM multiple bin->nvm conversion
+
+FM multiple nvm->bin conversion
+
+BT&&FM bin merge
+
+BT&&FM nvm merge
+
+BT&&FM bin->nvm conversion
+
+BT&&FM nvm->bin conversion
