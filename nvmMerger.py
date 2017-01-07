@@ -591,7 +591,6 @@ def nvmMerger():
 		else:
 			print ' No valid output file name specified, using default one...'
 
-		m = open(ofname, 'w+b')
 		bin2list(input_files, list_input_bt, list_input_fm)
 		#for bnvm in list_input_bt:
 		#	bnvm.printall()
@@ -609,7 +608,9 @@ def nvmMerger():
 					NVM_TLV_VERSION_BT: bt_list_output,
 					NVM_TLV_VERSION_FM: fm_list_output
 					}
+			m = open(ofname, 'w+b')
 			list2bin(complete_dic, m)		
+			m.close()
 		else:
 			# BT-only or FM-only merger
 			if BT_CNT > 0: 
@@ -619,15 +620,18 @@ def nvmMerger():
 					NVM_TLV_VERSION_BT: bt_list_output
 					}
 				if not TRANS_MODE:
+					m = open(ofname, 'w+b')
 					list2bin(complete_dic, m)		
+					m.close()
 			if FM_CNT > 0: 
 				fm_list_output = mergelists(list_input_fm)	
 				complete_dic = { 
 					NVM_TLV_VERSION_FM: fm_list_output
 					}
 				if not TRANS_MODE:
+					m = open(ofname, 'w+b')
 					list2bin(complete_dic, m)		
-		m.close()
+					m.close()
 	elif MERGER_MODE == NVM_MODE:
 		ofname = DEFAULT_FILE_OUTPUT + '.nvm'
 		if output_file[-3:] == 'nvm':
@@ -719,9 +723,8 @@ def nvmMerger():
 						m.close()
 		except IOError:
 			print ' Cannot open \"' + output_file + '\"\n'
-	print '*' * 32
+	print '\n\t...'
 	print '\n\tMerge completes\t\n'
-	print '*' * 32
 
 # start main function
 nvmMerger()

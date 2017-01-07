@@ -38,9 +38,11 @@ BT single bin->nvm conversion
 
 BT single nvm->bin conversion
 
-FM single bin->nvm conversion
+* FM single bin->nvm conversion
+	 nvmMerger.py input1.bin -o output.nvm
 
-FM single nvm->bin conversion
+* FM single nvm->bin conversion
+	 nvmMerger.py --FM input1.nvm -o output.bin
 
 BT multiple bin->nvm conversion
 
