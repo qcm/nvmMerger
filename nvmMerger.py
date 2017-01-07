@@ -141,9 +141,9 @@ def optParser():
 	py_ver = sys.hexversion
 	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
 	#print '\n*Your python version is ' + py_ver_str
-	sDescription = 'nvmMerger merges multiple NVM text/bin files into one'
-	sDescription += ', and file extension will decide merging into bin/text file.'
-	sDescription += '\n Note: if tags are duplicated, further right file has precedence'
+	sDescription = 'nvmMerger merges multiple NVM text/bin files into one.'
+	sDescription += 'Output file extension will decide merging into bin/text file.'
+	sDescription += '\nNote: if tags are duplicated, further right file has precedence'
 
 	if py_ver < PYTHON_VERSION:
 	#if py_ver >= PYTHON_VERSION:
@@ -220,6 +220,12 @@ def optParser():
 				exit()
 
 	if len(input_files) == 1 and output_file is None :
+		print '\n\tNothing to be done. Exit\n'
+		exit()
+	elif BT_CNT == 1 and FM_CNT == 0 and output_file is None :
+		print '\n\tNothing to be done. Exit\n'
+		exit()
+	elif BT_CNT == 0 and FM_CNT == 1 and output_file is None :
 		print '\n\tNothing to be done. Exit\n'
 		exit()
 	elif output_file is None:
@@ -589,7 +595,7 @@ def nvmMerger():
 		elif output_file[-3:] == 'nvm':
 			TRANS_MODE = True
 		else:
-			print ' No valid output file name specified, using default one...'
+			print '\tNo valid output file name specified, using default one...'
 
 		bin2list(input_files, list_input_bt, list_input_fm)
 		#for bnvm in list_input_bt:
@@ -643,7 +649,7 @@ def nvmMerger():
 		elif output_file[-3:] == 'bin':
 			TRANS_MODE = True
 		else:
-			print ' No valid output file name specified, using default one...'
+			print '\tNo valid output file name specified, using default one...'
 			
 
 		if BTFM_MODE:
@@ -688,17 +694,19 @@ def nvmMerger():
 					with open(output_file, 'w+') as m:
 						writeHeaderToFile(m)
 						if BTFM_MODE:
-							print '\tBTFM bin to nvm is not applicable\n'
+							print '\tBTFM bin to nvm is not applicable.\n'
+							m.close()
+							exit()
 						else:
 							if BT_CNT > 0:
 								list2NVMfile(bt_list_output, m)
 							if FM_CNT > 0:
 								list2NVMfile(fm_list_output, m)
-						m.close()
+							m.close()
 			else:
 			# NVM -> BIN
 					if BT_CNT == 0 and FM_CNT == 0:
-						print '\tFailed. Please specify input NVM type\n'
+						print '\tFailed. NVM to BIN conversion needs to specify input NVM type.\n'
 						exit()
 
 					with open(output_file, 'w+b') as m:
@@ -723,7 +731,6 @@ def nvmMerger():
 						m.close()
 		except IOError:
 			print ' Cannot open \"' + output_file + '\"\n'
-	print '\n\t...'
 	print '\n\tMerge completes\t\n'
 
 # start main function
