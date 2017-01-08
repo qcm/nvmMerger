@@ -23,52 +23,54 @@ usage: nvmMerger.py [-h] [-o output_file] input_files [input_files ...]
 	3. `TagLength = (TagLengthMSB << 8) + TagLengthLSB`
 	4. *.nvm is little-endian based, so we'll see:
 		[TagNumLSB, TagNumMSB] [TagLengthLSB, TagLengthMSB] 0x00 ... 0x00 [TagValue]
+
 ## Example Usage
 * BT multiple bin merge
-	*nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
+	* nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
 
 * FM multiple bin merge
-	*nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
+	* nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
 
 * BT multiple nvm merge
-	*nvmMerger.py intput0.nvm input1.nvm [...] [-o output.nvm]
-	*nvmMerger.py --BT intput0.nvm input1.nvm [...] [-o output.nvm]
+	* nvmMerger.py intput0.nvm input1.nvm [...] [-o output.nvm]
+	* nvmMerger.py --BT intput0.nvm input1.nvm [...] [-o output.nvm]
 
 * FM multiple nvm merge
-	*nvmMerger.py intput0.nvm input1.nvm [...] [-o output.nvm]
-	*nvmMerger.py --FM intput0.nvm input1.nvm [...] [-o output.nvm]
+	* nvmMerger.py intput0.nvm input1.nvm [...] [-o output.nvm]
+	* nvmMerger.py --FM intput0.nvm input1.nvm [...] [-o output.nvm]
 
 * BT single bin->nvm conversion
-	*nvmMerger.py input1.bin [-o output.nvm]
+	* nvmMerger.py input1.bin [-o output.nvm]
 
 * BT single nvm->bin conversion
-	*nvmMerger.py --BT input1.nvm [-o output.bin]
+	* nvmMerger.py --BT input1.nvm [-o output.bin]
 
 * FM single bin->nvm conversion
-	*nvmMerger.py input1.bin [-o output.nvm]
+	* nvmMerger.py input1.bin [-o output.nvm]
 
 * FM single nvm->bin conversion
-	*nvmMerger.py --FM input1.nvm [-o output.bin]
+	* nvmMerger.py --FM input1.nvm [-o output.bin]
 
 * BT multiple bin->nvm conversion
-	*nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
+	* nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
 
 * BT multiple nvm->bin conversion
-	*nvmMerger.py --BT intput0.nvm input1.nvm [...] [-o output.bin]
+	* nvmMerger.py --BT intput0.nvm input1.nvm [...] [-o output.bin]
 
 * FM multiple bin->nvm conversion
-	*nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
+	* nvmMerger.py intput0.bin input1.bin [...] [-o output.nvm]
 
 * FM multiple nvm->bin conversion
-	*nvmMerger.py --FM intput0.nvm input1.nvm [...] [-o output.bin]
+	* nvmMerger.py --FM intput0.nvm input1.nvm [...] [-o output.bin]
 
 * BT&&FM bin merge
-	*nvmMerger.py intput0.bin input1.bin [...] [-o output.bin]
+	* nvmMerger.py intput0.bin input1.bin [...] [-o output.bin]
 
 * BT&&FM nvm merge
-	*N/A
+	* N/A
 
 * BT&&FM bin->nvm conversion
-	*N/A
+	* N/A
 
-BT&&FM nvm->bin conversion
+* BT&&FM nvm->bin conversion
+	* nvmMerger.py --BT intput0.nvm [...] --FM input0.nvm [...] [-o output.nvm]
