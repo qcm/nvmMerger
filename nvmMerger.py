@@ -145,8 +145,8 @@ def optParser():
 	sDescription += 'Output file extension will decide merging into bin/text file.'
 	sDescription += '\nNote: if tags are duplicated, further right file has precedence'
 
-	if py_ver < PYTHON_VERSION:
-	#if py_ver >= PYTHON_VERSION:
+	#if py_ver < PYTHON_VERSION:
+	if py_ver >= PYTHON_VERSION:
 		import argparse
 		#print '*Use argparse module\n'
 		parser = argparse.ArgumentParser(description = sDescription)
@@ -175,18 +175,16 @@ def optParser():
 				input_files = [NVM_TLV_VERSION_FM, args.FM]
 			else:
 				parser.print_help()
-				print '*' * 32
 				print '\n\tNo input files\t\n'
-				print '*' * 32
 				exit()
 		else:
 			if args.BT is not None or args.FM is not None:
 				parser.print_help()
 				print '\nFor BTFM-NVM merge:'
-				print ' Please append all BT-NVM text file after --BT, all FM-NVM text file after --FM'
+				print '\tPlease append all BT-NVM text file after --BT, all FM-NVM text file after --FM'
 				exit()
 	else:
-		print '*Use optparse module\n'
+		#print '*Use optparse module\n'
 		from optparse import OptionParser
 		usage = 'nvmMerger.py [-h] [-o output_file] input_files [input_files ...]'
 		parser = OptionParser(usage, description = sDescription)
@@ -214,9 +212,7 @@ def optParser():
 				input_files = [NVM_TLV_VERSION_FM, options.FMFILES]
 			else:
 				parser.print_help()
-				print '*' * 32
 				print '\n\tNo input files\t\n'
-				print '*' * 32
 				exit()
 
 	if len(input_files) == 1 and output_file is None :
@@ -574,7 +570,7 @@ def mergelists(ilist):
 	TAG_NUM = len(complete_list) 
 	for i in range(TAG_NUM):
 		complete_list[i].TagIndex = i
-#complete_list[i].printall()
+	#complete_list[i].printall()
 
 	return complete_list
 	
@@ -730,7 +726,7 @@ def nvmMerger():
 								
 						m.close()
 		except IOError:
-			print ' Cannot open \"' + output_file + '\"\n'
+			print '\tCannot open \"' + output_file + '\"\n'
 	print '\n\tMerge completes\t\n'
 
 # start main function

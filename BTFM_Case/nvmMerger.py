@@ -145,8 +145,8 @@ def optParser():
 	sDescription += 'Output file extension will decide merging into bin/text file.'
 	sDescription += '\nNote: if tags are duplicated, further right file has precedence'
 
-	if py_ver < PYTHON_VERSION:
-	#if py_ver >= PYTHON_VERSION:
+	#if py_ver < PYTHON_VERSION:
+	if py_ver >= PYTHON_VERSION:
 		import argparse
 		#print '*Use argparse module\n'
 		parser = argparse.ArgumentParser(description = sDescription)
@@ -175,9 +175,7 @@ def optParser():
 				input_files = [NVM_TLV_VERSION_FM, args.FM]
 			else:
 				parser.print_help()
-				print '*' * 32
 				print '\n\tNo input files\t\n'
-				print '*' * 32
 				exit()
 		else:
 			if args.BT is not None or args.FM is not None:
@@ -214,9 +212,7 @@ def optParser():
 				input_files = [NVM_TLV_VERSION_FM, options.FMFILES]
 			else:
 				parser.print_help()
-				print '*' * 32
 				print '\n\tNo input files\t\n'
-				print '*' * 32
 				exit()
 
 	if len(input_files) == 1 and output_file is None :
@@ -574,7 +570,7 @@ def mergelists(ilist):
 	TAG_NUM = len(complete_list) 
 	for i in range(TAG_NUM):
 		complete_list[i].TagIndex = i
-#complete_list[i].printall()
+	#complete_list[i].printall()
 
 	return complete_list
 	
