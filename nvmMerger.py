@@ -368,7 +368,7 @@ def bin2list(flist, btlist=None, fmlist=None):
 
 					if dh[0] == NVM_TLV_VERSION_BT:
 						# BT data, put in btlist #
-						print '\n\tBT data dlen: %d\n' %dlen
+						#print '\n\tBT data dlen: %d\n' %dlen
 						i = 0 # index in data
 						li = btindex # index in list
 						while(i < dlen):
@@ -386,7 +386,7 @@ def bin2list(flist, btlist=None, fmlist=None):
 
 					if dh[0] == NVM_TLV_VERSION_FM:
 						# FM data, put in fmlist #
-						print '\n\tFM data dlen: %d\n' %dlen
+						#print '\n\tFM data dlen: %d\n' %dlen
 						i = 0 # index in data
 						li = fmindex # index in the list
 						while(i < dlen):
@@ -610,9 +610,10 @@ def nvmMerger():
 					NVM_TLV_VERSION_BT: bt_list_output,
 					NVM_TLV_VERSION_FM: fm_list_output
 					}
-			m = open(ofname, 'w+b')
-			list2bin(complete_dic, m)		
-			m.close()
+			if not TRANS_MODE:
+				m = open(ofname, 'w+b')
+				list2bin(complete_dic, m)		
+				m.close()
 		else:
 			# BT-only or FM-only merger
 			if BT_CNT > 0: 
@@ -687,43 +688,41 @@ def nvmMerger():
 		try:
 			if output_file[-3:] == 'nvm':
 			# BIN -> NVM
+				if BTFM_MODE:
+					print '\tBTFM bin to nvm is not applicable.\n'
+					exit()
+				else:
 					with open(output_file, 'w+') as m:
 						writeHeaderToFile(m)
-						if BTFM_MODE:
-							print '\tBTFM bin to nvm is not applicable.\n'
-							m.close()
-							exit()
-						else:
-							if BT_CNT > 0:
-								list2NVMfile(bt_list_output, m)
-							if FM_CNT > 0:
-								list2NVMfile(fm_list_output, m)
-							m.close()
+						if BT_CNT > 0:
+							list2NVMfile(bt_list_output, m)
+						if FM_CNT > 0:
+							list2NVMfile(fm_list_output, m)
+						m.close()
 			else:
 			# NVM -> BIN
-					if BT_CNT == 0 and FM_CNT == 0:
-						print '\tFailed. NVM to BIN conversion needs to specify input NVM type.\n'
-						exit()
+				if BT_CNT == 0 and FM_CNT == 0:
+					print '\tFailed. NVM to BIN conversion needs to specify input NVM type.\n'
+					exit()
 
-					with open(output_file, 'w+b') as m:
-						if BTFM_MODE:
-							complete_dic = { 
-								NVM_TLV_VERSION_BT: bt_list_output,
+				with open(output_file, 'w+b') as m:
+					if BTFM_MODE:
+						complete_dic = { 
+							NVM_TLV_VERSION_BT: bt_list_output,
+							NVM_TLV_VERSION_FM: fm_list_output
+							}
+						list2bin(complete_dic, m)		
+					else:
+						if BT_CNT > 0:
+							complete_dic = {
+								NVM_TLV_VERSION_BT: bt_list_output
+							}
+							list2bin(complete_dic, m)
+						if FM_CNT > 0:
+							complete_dic = {
 								NVM_TLV_VERSION_FM: fm_list_output
-								}
-							list2bin(complete_dic, m)		
-						else:
-							if BT_CNT > 0:
-								complete_dic = {
-									NVM_TLV_VERSION_BT: bt_list_output
-								}
-								list2bin(complete_dic, m)
-							if FM_CNT > 0:
-								complete_dic = {
-									NVM_TLV_VERSION_FM: fm_list_output
-								}
-								list2bin(complete_dic, m)
-								
+							}
+							list2bin(complete_dic, m)
 						m.close()
 		except IOError:
 			print '\tCannot open \"' + output_file + '\"\n'
