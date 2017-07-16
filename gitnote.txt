@@ -1,0 +1,2 @@
+Rename branch from nvmtool to NvmUtility as this branch will add split-feature onto NvmUtility mainline
+Rename test cases folder names
