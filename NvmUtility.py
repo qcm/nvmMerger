@@ -8,7 +8,6 @@
 # QUALCOMM Atheros Confidential and Proprietary
 #
 # Notifications and licenses are retained for attribution purposes only
-
 #===============================================================================
 
 import binascii
