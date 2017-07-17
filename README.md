@@ -1,12 +1,12 @@
-# nvmtool
+# NvmUtility
 ## Description
-nvmtool will merge multiple bin/text formated NVM files into one. If there are
+NvmUtility will merge multiple bin/text formated NVM files into one. If there are
 duplicated NVM tags, the second file's NVM will replace the first ones.
-nvmtool can also convert format between bin and nvm text format.
-If input file extension are nvm and output is bin, nvmtool will transfer file from nvm to bin.
+NvmUtility can also convert format between bin and nvm text format.
+If input file extension are nvm and output is bin, NvmUtility will transfer file from nvm to bin.
 Vice versa.
 
-usage: nvmtool.py [-h] [-o output_file] input_files [input_files ...]
+usage: NvmUtility.py [-h] [-o output_file] input_files [input_files ...]
 
 ## NVM Format
 * First 4 bytes are irrelevant for BT SoC settings:
@@ -26,36 +26,36 @@ usage: nvmtool.py [-h] [-o output_file] input_files [input_files ...]
 
 ## Example Usage
 * BT multiple bin merge
-	* nvmtool.py intput0.bin input1.bin [...] [-o output.nvm]
+	* NvmUtility.py intput0.bin input1.bin [...] [-o output.bin]
 
 * FM multiple bin merge
-	* nvmtool.py intput0.bin input1.bin [...] [-o output.nvm]
+	* nvmtool.py intput0.bin input1.bin [...] [-o output.bin]
 
 * BT multiple nvm merge
-	* nvmtool.py intput0.nvm input1.nvm [...] [-o output.nvm]
-	* nvmtool.py --BT intput0.nvm input1.nvm [...] [-o output.nvm]
+	* NvmUtility.py intput0.nvm input1.nvm [...] [-o output.nvm]
+	* NvmUtility.py --BT intput0.nvm input1.nvm [...] [-o output.nvm]
 
 * FM multiple nvm merge
-	* nvmtool.py intput0.nvm input1.nvm [...] [-o output.nvm]
-	* nvmtool.py --FM intput0.nvm input1.nvm [...] [-o output.nvm]
+	* NvmUtility.py intput0.nvm input1.nvm [...] [-o output.nvm]
+	* NvmUtility.py --FM intput0.nvm input1.nvm [...] [-o output.nvm]
 
 * BT single bin->nvm conversion
-	* nvmtool.py input1.bin [-o output.nvm]
+	* NvmUtility.py input1.bin -o output.nvm
 
 * BT single nvm->bin conversion
-	* nvmtool.py --BT input1.nvm [-o output.bin]
+	* NvmUtility.py --BT input1.nvm -o output.bin
 
 * FM single bin->nvm conversion
-	* nvmtool.py input1.bin [-o output.nvm]
+	* NvmUtility.py input1.bin -o output.nvm
 
 * FM single nvm->bin conversion
-	* nvmtool.py --FM input1.nvm [-o output.bin]
+	* NvmUtility.py --FM input1.nvm -o output.bin
 
 * BT multiple bin->nvm conversion
-	* nvmtool.py intput0.bin input1.bin [...] [-o output.nvm]
+	* NvmUtility.py intput0.bin input1.bin [...] [-o output.nvm]
 
 * BT multiple nvm->bin conversion
-	* nvmtool.py --BT intput0.nvm input1.nvm [...] [-o output.bin]
+	* NvmUtility.py --BT intput0.nvm input1.nvm [...] [-o output.bin]
 
 * FM multiple bin->nvm conversion
 	* nvmtool.py intput0.bin input1.bin [...] [-o output.nvm]
