@@ -73,7 +73,6 @@ NVM_TLV_ZERO_PADDING = 8
 NVM_BODY_LEN = 0
 NVM_HEADER = ''
 
-TAG_NUM = 0 
 # create lists stores whole bin file
 list_input_bt = []
 list_input_fm = []
@@ -557,7 +556,7 @@ def getDataLength(h):
 	return length
 	
 # write the header of NVM-text file
-def writeHeaderToFile(fobj):
+def writeHeaderToFile(ilist, fobj):
         fobj.write('#\n#\n')
         fobj.write('#    Tag Listfile     \n')
         fobj.write('#\n#\n')
@@ -573,7 +572,8 @@ def writeHeaderToFile(fobj):
         fobj.write('TimeStamp =' + s)
         fobj.write('\n\n')
         fobj.write('[Tag]\n')
-        s = 'Num = ' + str(TAG_NUM) + '\n\n'
+
+	s = 'Num = ' + str(len(ilist)) + '\n\n'
         fobj.write(s)
 
 # write the list to NVM-text file
@@ -586,14 +586,14 @@ def list2NVMfile(nvm_list, fobj):
 		sTagValue = 'TagValue =' 
 		if MERGER_MODE == NVM_MODE:
 			sTagValue += nvm.TagValue[0] 
-			if nvm.TagIndex != TAG_NUM - 1:
+			if nvm.TagIndex != len(nvm_list) - 1:
 				sTagValue += '\n'
 		elif MERGER_MODE == BIN_MODE:
 			for i in nvm.TagValue:
 				sTagValue += ' '
 				sTagValue += binascii.b2a_hex(i)
 			sTagValue += '\n'
-			if nvm.TagIndex != TAG_NUM - 1:
+			if nvm.TagIndex != len(nvm_list) - 1:
 				sTagValue += '\n'
 			
 		fobj.write(sHeader)
@@ -628,7 +628,6 @@ def nvm2list(flist, nvm_list):
 
 # merge input lists and sort them based on Tag num
 def mergelists(ilist):
-	global TAG_NUM
 	nvm_list = sorted(ilist, key=lambda nvm: nvm.TagNum)
 	for nvm in nvm_list:
 		for nvmr in reversed(nvm_list):
@@ -639,15 +638,13 @@ def mergelists(ilist):
 					#nvmr.printall()
 					nvm.TagNum = -1
 					
-	TAG_NUM = len(nvm_list) 
 	complete_list = []
 	# redefine TagIndex after merging
-	for i in range(TAG_NUM):
+	for i in range(len(nvm_list)):
 		if nvm_list[i].TagNum != -1:
 			complete_list.append(nvm_list[i])
 
-	TAG_NUM = len(complete_list) 
-	for i in range(TAG_NUM):
+	for i in range(len(complete_list)):
 		complete_list[i].TagIndex = i
 	#complete_list[i].printall()
 
@@ -746,7 +743,7 @@ def nvmUtility():
 				bt_list_output = mergelists(list_input_bt)	
 				if not TRANS_MODE:
 					m = open(ofname, 'w+')
-					writeHeaderToFile(m)
+					writeHeaderToFile(bt_list_output, m)
 					list2NVMfile(bt_list_output, m)
 					m.close()
 			elif FM_CNT > 0:
@@ -754,7 +751,7 @@ def nvmUtility():
 				fm_list_output = mergelists(list_input_fm)	
 				if not TRANS_MODE:
 					m = open(ofname, 'w+')
-					writeHeaderToFile(m)
+					writeHeaderToFile(fm_list_output, m)
 					list2NVMfile(fm_list_output, m)
 					m.close()
 			elif FM_CNT == 0 or BT_CNT == 0:
@@ -763,7 +760,7 @@ def nvmUtility():
 				non_spec_list_output = mergelists(non_spec_list)
 				if not TRANS_MODE:
 					m = open(ofname, 'w+')
-					writeHeaderToFile(m)
+					writeHeaderToFile(non_spec_list_output, m)
 					list2NVMfile(non_spec_list_output, m)
 					m.close()
 
@@ -773,10 +770,11 @@ def nvmUtility():
 			# output_file has to be None
 				for ofname in output_split_files:
 					with open(ofname, 'w+') as s:
-						writeHeaderToFile(s)
 						if ofname == output_split_files[0]:
+							writeHeaderToFile(bt_list_output, s)
 							list2NVMfile(bt_list_output, s)
 						elif ofname == output_split_files[1]:
+							writeHeaderToFile(fm_list_output, s)
 							list2NVMfile(fm_list_output, s)
 						s.close()
 			elif output_file[-3:] == 'nvm':
@@ -786,10 +784,11 @@ def nvmUtility():
 					exit()
 				else:
 					with open(output_file, 'w+') as m:
-						writeHeaderToFile(m)
 						if BT_CNT > 0:
+							writeHeaderToFile(bt_list_output, m)
 							list2NVMfile(bt_list_output, m)
 						if FM_CNT > 0:
+							writeHeaderToFile(fm_list_output, m)
 							list2NVMfile(fm_list_output, m)
 						m.close()
 			elif output_file[-3:] == 'bin':

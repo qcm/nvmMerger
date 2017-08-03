@@ -29,7 +29,7 @@ usage: NvmUtility.py [-h] [-o output_file] input_files [input_files ...]
 	* NvmUtility.py intput0.bin input1.bin [...] [-o output.bin]
 
 * FM multiple bin merge
-	* nvmtool.py intput0.bin input1.bin [...] [-o output.bin]
+	* NvmUtility.py intput0.bin input1.bin [...] [-o output.bin]
 
 * BT multiple nvm merge
 	* NvmUtility.py intput0.nvm input1.nvm [...] [-o output.nvm]
@@ -58,10 +58,10 @@ usage: NvmUtility.py [-h] [-o output_file] input_files [input_files ...]
 	* NvmUtility.py --BT intput0.nvm input1.nvm [...] [-o output.bin]
 
 * FM multiple bin->nvm conversion
-	* nvmtool.py intput0.bin input1.bin [...] [-o output.nvm]
+	* NvmUtility.py intput0.bin input1.bin [...] [-o output.nvm]
 
 * FM multiple nvm->bin conversion
-	* nvmtool.py --FM intput0.nvm input1.nvm [...] [-o output.bin]
+	* NvmUtility.py --FM intput0.nvm input1.nvm [...] [-o output.bin]
 
 * BT&&FM bin merge
 	* nvmtool.py intput0.bin input1.bin [...] [-o output.bin]

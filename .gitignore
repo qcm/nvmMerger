@@ -1,2 +1,7 @@
 *.nvm
 *.bin
+./Case_BTFM_Formats/*.py
+./Case_bin_files/*.py
+./Case_adding/*.py
+./Case_replacing/*.py
+
