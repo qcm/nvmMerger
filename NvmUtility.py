@@ -28,10 +28,10 @@ Usage:
     %prog [--BT/FM] <input file list> -o <outputfilename.nvm/bin> 
     
     BT single nvm->bin conversion
-        %prog --BT input1.nvm [-o output.bin]
+        %prog --BT input1.nvm -o output.bin
     
     BT single bin->nvm conversion
-        %prog input1.bin [-o output.nvm]
+        %prog input1.bin -o output.nvm
 
     BT multiple nvm->bin conversion
         %prog --BT intput0.nvm input1.nvm [...] [-o output.bin]
@@ -53,7 +53,7 @@ Usage:
         N/A
 
     BT&&FM bin->nvm conversion
-        N/A
+        %prog -s input.bin
 """
 
 # use argparse for python version higher than 2.7
