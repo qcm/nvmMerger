@@ -25,7 +25,7 @@ Description :
         - In all the cases it takes multiple input files of same type to generate a single Output file.
 
 Usage: 
-    %prog [--BT/FM] <input file list> -o <outputfilename.nvm/bin> 
+    %prog [--BT/FM] <input file list> -o <output filename.nvm/bin> 
     
     BT single nvm->bin conversion
         %prog --BT input1.nvm -o output.bin
@@ -200,7 +200,7 @@ def optParser():
 	if py_ver >= PYTHON_VERSION:
 		import argparse
 		#print '*Use argparse module\n'
-		parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+		parser = argparse.ArgumentParser(prog='NvmUtility', formatter_class=argparse.RawDescriptionHelpFormatter,
 										description = Description)
 		parser.add_argument('input_files', nargs='*', help='NVM bin/text files to merge')
 		#parser.add_argument('input_files', nargs='+', help='NVM bin/text files to merge')
