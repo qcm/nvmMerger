@@ -60,7 +60,7 @@ Usage:
 # use optparse for python version lower than 2.7
 # argparse was added since 2.7
 PYTHON_VERSION = 0x02070000
-DEBUG_INFO_FLAG = 0
+DEBUG_INFO_FLAG = 1
 
 NVM_TLV_VERSION_BT = b'\x02'
 NVM_TLV_VERSION_FM = b'\x03'
@@ -89,6 +89,7 @@ NVM_MODE = 'nvm' # merge text files of NVM
 TRANS_MODE = False # output involves a bin->nvm/nvm->bin transfer
 BTFM_MODE = False # if input files has both BT and FM bin/nvm files
 SPLIT_MODE = False # Extract out BT and FM nvms from combined bin file
+CONSOLE_MODE = False # console mode to keep NvmUtility continuously working
 BT_CNT = 0 # BT NVM file counts
 FM_CNT = 0 # FM NVM file counts
 
@@ -190,7 +191,8 @@ def vararg_cb(opt, opt_str, val, parser):
 # command-line input processor
 def optParser():
 	global input_files, output_file
-	global BTFM_MODE, MERGER_MODE, SPLIT_MODE, BT_CNT, FM_CNT
+	global BTFM_MODE, MERGER_MODE, SPLIT_MODE, CONSOLE_MODE
+	global BT_CNT, FM_CNT
 	py_ver = sys.hexversion
 	py_ver_str = str(sys.version_info[0]) + '.' + str(sys.version_info[1]) + '.' + str(sys.version_info[2])
 	#print '\n*Your python version is ' + py_ver_str
@@ -210,17 +212,22 @@ def optParser():
 		parser.add_argument('--BT', metavar='BT.nvm', nargs='*', help='BT NVM text-based input files')
 		parser.add_argument('--FM', metavar='FM.nvm', nargs='*', help='FM NVM text-based input files')
 		parser.add_argument('-s', action='store_true', help='To enable split mode')
+		parser.add_argument('-c', action='store_true', help='To enable console mode')
 
 		args = parser.parse_args()
 		input_files = args.input_files
 		output_file = args.output
 		SPLIT_MODE = args.s
+		CONSOLE_MODE = args.c
 
 		if len(input_files) == 0: # imply NVM_MODE, otherwise simply using positional argument
 			MERGER_MODE = NVM_MODE
 			if SPLIT_MODE:
 				if DEBUG_INFO_FLAG >= 1: print '\tNo input file to split'
 				exit()
+			elif CONSOLE_MODE:
+				return 
+
 			if args.BT is not None and args.FM is not None:
 				BT_CNT = len(args.BT)
 				FM_CNT = len(args.FM)
@@ -251,16 +258,21 @@ def optParser():
 		parser.add_option('--BT', help='BT NVM text-based input files', dest='BTFILES', action='callback', callback=vararg_cb)
 		parser.add_option('--FM', help='FM NVM text-based input files', dest='FMFILES', action='callback', callback=vararg_cb)
 		parser.add_option('-s', action='store_true', help='To enable split mode')
+		parser.add_option('-c', action='store_true', help='To enable console mode')
 		(options, args) = parser.parse_args()
 		input_files = args
 		output_file = options.output
 		SPLIT_MODE = options.s
+		CONSOLE_MODE = options.c
 		
 		if len(input_files) == 0: # imply NVM_MODE, otherwise simply using positional argument
 			MERGER_MODE = NVM_MODE
 			if SPLIT_MODE:
 				if DEBUG_INFO_FLAG >= 1: print '\tNo input file to split'
 				exit()
+			elif CONSOLE_MODE:
+				return 
+
 			if options.BTFILES is not None and options.FMFILES is not None:
 				BT_CNT = len(options.BTFILES)
 				FM_CNT = len(options.FMFILES)
@@ -276,6 +288,9 @@ def optParser():
 				parser.print_help()
                 		if DEBUG_INFO_FLAG >= 1: print '\n\tNo input files\t\n'
 				exit()
+		elif CONSOLE_MODE:
+			print "Hello"
+			return
 		else:
 			if options.BTFILES is not None or options.FMFILES is not None:
 				parser.print_help()
@@ -650,16 +665,38 @@ def mergelists(ilist):
 
 	return complete_list
 	
-# main function
+# console handler
+def consoleLooper():
+	global input_files, output_file
+	
+	if DEBUG_INFO_FLAG >= 1:
+		print "Console Mode"
+	try:
+		while True:
+			fnames = raw_input("NvmUtility> ")
+			if DEBUG_INFO_FLAG >= 1: print fnames
+			input_files = fnames.split()
+			output_file = ""
+			if not nvmChecker(input_files):
+				continue
+			for fname in input_files:
+				output_file += fname[:-4]
+				if fname is input_files[-1]:
+					output_file += fname[-4:]
+				else:
+					output_file += "_"
+			nvmUtility()
+
+	except KeyboardInterrupt:
+		print "\nExit NvmUtility"
+
+# main function to do merge
 def nvmUtility():
 	global output_file, bt_list_output, fm_list_output
 	global TRANS_MODE
-	optParser()
-	## Check file format and decides MODE
-	if not nvmChecker(input_files):
-		exit()
 
 	if DEBUG_INFO_FLAG >= 1: print '\tPass input file checks, starting to '+ MERGER_MODE + ' merger...\n'
+
 	if MERGER_MODE == BIN_MODE:
 		ofname = DEFAULT_FILE_OUTPUT + '.bin'
 		if SPLIT_MODE:
@@ -820,6 +857,19 @@ def nvmUtility():
 		except IOError:
 			if DEBUG_INFO_FLAG >= 1: print '\tCannot open \"' + output_file + '\"\n'
 	if DEBUG_INFO_FLAG >= 1: print '\n\tMerge completes\t\n'
+	## end of nvmUtility ##
+
+def main():
+	optParser()
+	## console mode ##
+	if CONSOLE_MODE:
+		consoleLooper()
+		exit()
+
+	## Check file format and decides MODE
+	if not nvmChecker(input_files):
+		exit()
+	nvmUtility()
 
 # start main function
-nvmUtility()
+main()
